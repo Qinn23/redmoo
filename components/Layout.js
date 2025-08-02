@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { Chonburi, Domine } from "next/font/google";
 
@@ -15,6 +15,22 @@ const domine = Domine({
 
 export default function Layout({ children }) {
   const router = useRouter();
+  const [walletConnected, setWalletConnected] = useState(false);
+
+  useEffect(() => {
+    setWalletConnected(typeof window !== 'undefined' && localStorage.getItem('walletConnected') === 'true');
+    const onStorage = () => setWalletConnected(localStorage.getItem('walletConnected') === 'true');
+    window.addEventListener('storage', onStorage);
+    // Listen for changes from logout or switch account (in-page)
+    const interval = setInterval(() => {
+      setWalletConnected(localStorage.getItem('walletConnected') === 'true');
+    }, 500);
+    return () => {
+      window.removeEventListener('storage', onStorage);
+      clearInterval(interval);
+    };
+  }, []);
+
   return (
     <div className={`${chonburi.variable} ${domine.variable} min-h-screen bg-gradient-to-br from-[#F8F2DE] to-[#ECDCBF]`}>
       {/* Header */}
@@ -38,9 +54,21 @@ export default function Layout({ children }) {
                   Sell
                 </button>
               </nav>
-              <button className="ml-6 bg-[#D84040] text-white px-6 py-2 rounded-full hover:bg-[#A31D1D] transition-all duration-200 font-medium font-domine hover:scale-110 transform hover:shadow-lg" onClick={() => router.push('/connect-wallet')}>
-                Connect Wallet
-              </button>
+              {!walletConnected ? (
+                <button
+                  onClick={() => router.push('/connect-wallet')}
+                  className="bg-[#D84040] text-white px-6 py-2 rounded-full hover:bg-[#A31D1D] transition-all duration-200 font-medium font-domine hover:scale-110 transform hover:shadow-lg"
+                >
+                  Connect Wallet
+                </button>
+              ) : (
+                <button
+                  onClick={() => router.push('/profile')}
+                  className="bg-[#D84040] text-white px-6 py-2 rounded-full hover:bg-[#A31D1D] transition-all duration-200 font-medium font-domine hover:scale-110 transform hover:shadow-lg"
+                >
+                  Profile
+                </button>
+              )}
             </div>
           </div>
         </div>
