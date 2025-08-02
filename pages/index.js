@@ -77,7 +77,7 @@ export default function Home() {
         <div className="max-w-4xl mx-auto">
           <input
             type="text"
-            placeholder="Search for your favourite event."
+            placeholder="Search for your favourite event..."
             value={searchQuery}
             onChange={handleSearch}
             className="w-full px-6 py-4 rounded-full bg-white text-[#D84040] font-domine focus:outline-none focus:ring-2 focus:ring-[#D84040] focus:ring-opacity-50 placeholder-[#A31D1D] shadow-lg border-2 border-[#D84040]"

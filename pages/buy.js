@@ -17,6 +17,7 @@ export default function Buy() {
     <div className="flex items-center justify-center h-full">
       <div className="bg-white p-8 rounded-lg shadow-lg text-center w-full max-w-2xl">
         <h1 className="text-3xl font-bold text-[#A31D1D] mb-4 font-chonburi">Buy Tickets</h1>
+        <p className="text-[#A31D1D] font-domine mb-6 text-base">Here are second-hand tickets resold by other users.</p>
         <input
           className="border px-4 py-2 rounded w-full mb-6 font-domine"
           placeholder="Search for events to buy..."
