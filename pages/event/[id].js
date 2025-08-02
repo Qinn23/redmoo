@@ -157,40 +157,9 @@ export default function EventDetail() {
   }
 
   return (
-    <div className={`${chonburi.variable} ${domine.variable} min-h-screen bg-gradient-to-br from-[#F8F2DE] to-[#ECDCBF]`}>
-      {/* Header */}
-      <header className="bg-white shadow-lg border-b-2 border-[#D84040]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            {/* Logo */}
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-[#D84040] rounded-full flex items-center justify-center">
-                <span className="text-white font-bold text-xl font-chonburi">R</span>
-              </div>
-              <span className="text-2xl font-bold text-[#D84040] font-chonburi">RedMoo</span>
-            </div>
-
-            {/* Navigation */}
-            <nav className="flex items-center space-x-4">
-              <button 
-                onClick={() => router.push('/')}
-                className="text-gray-700 hover:text-[#D84040] font-medium transition-colors font-domine"
-              >
-                Home
-              </button>
-              <button className="text-gray-700 hover:text-[#D84040] font-medium transition-colors font-domine">
-                Buy
-              </button>
-              <button className="text-gray-700 hover:text-[#D84040] font-medium transition-colors font-domine">
-                Sell
-              </button>
-            </nav>
-          </div>
-        </div>
-      </header>
-
+    <div className={`${chonburi.variable} ${domine.variable}`}>
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Back Button */}
         <button 
           onClick={() => router.push('/')}
@@ -202,10 +171,9 @@ export default function EventDetail() {
           Back to Events
         </button>
 
-        {/* Event Details */}
-        <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-          {/* Event Banner */}
-          <div className="relative h-64 overflow-hidden">
+        {/* Event Banner Image */}
+        <div className="bg-white rounded-lg shadow-lg overflow-hidden mb-8">
+          <div className="relative h-96 overflow-hidden">
             <div 
               className="absolute inset-0 bg-cover bg-center transform scale-110"
               style={{
@@ -213,15 +181,18 @@ export default function EventDetail() {
                 animation: 'zoomInOut 8s ease-in-out infinite'
               }}
             ></div>
-            <div className="absolute inset-0 bg-black bg-opacity-40"></div>
+            <div className="absolute inset-0 bg-black bg-opacity-20"></div>
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-center text-white">
-                <h1 className="text-4xl font-bold font-chonburi mb-2">{event.name}</h1>
-                <p className="text-xl font-domine opacity-90">{event.category}</p>
+                <h1 className="text-5xl font-bold font-chonburi mb-2 drop-shadow-lg">{event.name}</h1>
+                <p className="text-2xl font-domine opacity-90 drop-shadow-lg">{event.category}</p>
               </div>
             </div>
           </div>
+        </div>
 
+        {/* Event Details */}
+        <div className="bg-white rounded-lg shadow-lg overflow-hidden">
           {/* Event Content */}
           <div className="p-8">
             <div className="grid lg:grid-cols-3 gap-8">
@@ -376,7 +347,10 @@ export default function EventDetail() {
                     <p className="text-sm opacity-90 font-domine">per ticket</p>
                   </div>
 
-                  <button className="w-full bg-[#D84040] text-white py-4 rounded-full hover:bg-[#A31D1D] transition-colors font-bold text-lg font-domine">
+                  <button 
+                    onClick={() => router.push(`/seat-selection/${event.id}`)}
+                    className="w-full bg-[#D84040] text-white py-4 rounded-full hover:bg-[#A31D1D] transition-colors font-bold text-lg font-domine"
+                  >
                     Buy Tickets
                   </button>
 
@@ -388,7 +362,7 @@ export default function EventDetail() {
             </div>
           </div>
         </div>
-      </main>
+      </div>
 
       <style jsx>{`
         .line-clamp-3 {
