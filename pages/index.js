@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import { useRouter } from "next/router";
 import { Chonburi, Domine } from "next/font/google";
 import { useWalletInfo } from "../wallet/useWallet.js";
 import { useWalletKit } from '@mysten/wallet-kit';
@@ -18,6 +19,7 @@ const domine = Domine({
 });
 
 export default function Home() {
+  const router = useRouter();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showEvents, setShowEvents] = useState(false);
@@ -39,7 +41,7 @@ export default function Home() {
     {
       id: 1,
       name: "Taylor Swift - The Eras Tour",
-      date: "2025-09-15",
+      date: "2024-12-15",
       venue: "MetLife Stadium",
       price: "$150",
       image: "https://media.cnn.com/api/v1/images/stellar/prod/gettyimages-2181107453-20241209114519432.jpg?q=w_3000,c_fill" 
@@ -47,7 +49,7 @@ export default function Home() {
     {
       id: 2,
       name: "Ed Sheeran Live in Concert",
-      date: "2025-11-20",
+      date: "2024-11-20",
       venue: "Madison Square Garden",
       price: "$120",
       image: "https://www.billboard.com/wp-content/uploads/2023/09/ed-sheeran-wiltern-2023-billboard-1548.jpg?v=2" 
@@ -55,16 +57,16 @@ export default function Home() {
     {
       id: 3,
       name: "NBA Finals Game 7",
-      date: "2025-10-15",
+      date: "2024-06-15",
       venue: "Chase Center",
       price: "$200",
       image: "https://i.ytimg.com/vi/pX___DCt-6g/hq720.jpg?sqp=-oaymwEhCK4FEIIDSFryq4qpAxMIARUAAAAAGAElAADIQj0AgKJD&rs=AOn4CLAz22YiPPDDDQc0ADmQ6r-oNyz5iQ" 
     },
     {
       id: 4,
-      name: "Infinite 15th Anniversary Concert",
-      date: "2025-08-25",
-      venue: "Mega Star Arena KL",
+      name: "Comic Con 2024",
+      date: "2024-07-25",
+      venue: "Convention Center",
       price: "$80",
       image: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhsyC2agb1zZw6MVnRCLoS4iN6wlNWcfE0WUXFgW-U8IUttGujWsixC4Tw2YRJ9OyV4JxWMnmiBcmf5IfkCnsVqCTps7jkj2KxH0zgk6bDXPOhBj0-ztrQMmXPg8TDAkRTlWvGwXggsaSiDgXpfykA1smOhBOhRa6UeVMO9xKj9gFd13pHIoE5os2xxYfn0/w640-h250/Infinite%20KL2025%20-%20Banner.jpg" 
     }
@@ -219,7 +221,7 @@ export default function Home() {
                   <div className="flex justify-between items-center mt-auto pt-4 border-t border-gray-100">
                     <span className="text-[#D84040] font-bold text-lg font-domine">{event.price}</span>
                     <button 
-                      onClick={() => window.location.href = `/event/${event.id}`}
+                      onClick={() => router.push(`/event/${event.id}`)}
                       className="bg-[#D84040] text-white px-4 py-2 rounded-full hover:bg-[#A31D1D] transition-colors font-medium text-sm font-domine"
                     >
                       View Details
