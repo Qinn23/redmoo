@@ -157,55 +157,23 @@ export default function EventDetail() {
   }
 
   return (
-    <div className={`${chonburi.variable} ${domine.variable} min-h-screen bg-gradient-to-br from-[#F8F2DE] to-[#ECDCBF]`}>
-      {/* Header */}
-      <header className="bg-white shadow-lg border-b-2 border-[#D84040]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            {/* Logo */}
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-[#D84040] rounded-full flex items-center justify-center">
-                <span className="text-white font-bold text-xl font-chonburi">R</span>
-              </div>
-              <span className="text-2xl font-bold text-[#D84040] font-chonburi">RedMoo</span>
-            </div>
-
-            {/* Navigation */}
-            <nav className="flex items-center space-x-4">
-              <button 
-                onClick={() => router.push('/')}
-                className="text-gray-700 hover:text-[#D84040] font-medium transition-colors font-domine"
-              >
-                Home
-              </button>
-              <button className="text-gray-700 hover:text-[#D84040] font-medium transition-colors font-domine">
-                Buy
-              </button>
-              <button className="text-gray-700 hover:text-[#D84040] font-medium transition-colors font-domine">
-                Sell
-              </button>
-            </nav>
-          </div>
-        </div>
-      </header>
-
+    <div className={`${chonburi.variable} ${domine.variable}`}>
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Back Button */}
         <button 
-          onClick={() => router.push('/')}
+          onClick={() => router.push('/')} 
           className="flex items-center text-[#D84040] hover:text-[#A31D1D] font-medium font-domine mb-8 transition-colors"
         >
           <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
-          Back to Events
+          Back to Home
         </button>
 
-        {/* Event Details */}
-        <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-          {/* Event Banner */}
-          <div className="relative h-64 overflow-hidden">
+        {/* Event Banner Image */}
+        <div className="bg-white rounded-lg shadow-lg overflow-hidden mb-8">
+          <div className="relative h-96 overflow-hidden">
             <div 
               className="absolute inset-0 bg-cover bg-center transform scale-110"
               style={{
@@ -213,16 +181,18 @@ export default function EventDetail() {
                 animation: 'zoomInOut 8s ease-in-out infinite'
               }}
             ></div>
-            <div className="absolute inset-0 bg-black bg-opacity-40"></div>
+            <div className="absolute inset-0 bg-black bg-opacity-20"></div>
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-center text-white">
-                <h1 className="text-4xl font-bold font-chonburi mb-2">{event.name}</h1>
-                <p className="text-xl font-domine opacity-90">{event.category}</p>
+                <h1 className="text-5xl font-bold font-chonburi mb-2 drop-shadow-lg">{event.name}</h1>
+                <p className="text-2xl font-domine opacity-90 drop-shadow-lg">{event.category}</p>
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Event Content */}
+        {/* Event Details */}
+        <div className="bg-white rounded-lg shadow-lg overflow-hidden">
           <div className="p-8">
             <div className="grid lg:grid-cols-3 gap-8">
               {/* Left Column - Event Info */}
@@ -348,48 +318,35 @@ export default function EventDetail() {
               {/* Right Column - Purchase */}
               <div className="bg-gray-50 rounded-lg p-6 h-fit">
                 <h2 className="text-2xl font-bold text-[#A31D1D] font-chonburi mb-6">Purchase Tickets</h2>
-                
-                <div className="space-y-6">
-                  <div className="bg-white rounded-lg p-4 border border-gray-200">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="font-semibold font-domine">Ticket Price</span>
-                      <span className="text-2xl font-bold text-[#D84040] font-domine">{event.price}</span>
-                    </div>
-                    <p className="text-sm text-gray-600 font-domine">Original price - no markup</p>
-                  </div>
-
-                  <div className="bg-white rounded-lg p-4 border border-gray-200">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="font-semibold font-domine">Booking Fee</span>
-                      <span className="text-lg font-bold text-[#D84040] font-domine">4%</span>
-                    </div>
-                    <p className="text-sm text-gray-600 font-domine">Standard processing fee</p>
-                  </div>
-
-                  <div className="bg-[#D84040] rounded-lg p-4 text-white">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="font-semibold font-domine">Total Price</span>
-                      <span className="text-2xl font-bold font-domine">
-                        ${(parseFloat(event.price.replace('$', '')) * 1.04).toFixed(0)}
-                      </span>
-                    </div>
-                    <p className="text-sm opacity-90 font-domine">per ticket</p>
-                  </div>
-
-                  <button className="w-full bg-[#D84040] text-white py-4 rounded-full hover:bg-[#A31D1D] transition-colors font-bold text-lg font-domine">
-                    Buy Tickets
-                  </button>
-
-                  <p className="text-center text-sm text-gray-600 font-domine">
-                    You need to sign in to purchase tickets
-                  </p>
-                </div>
+                {/* Conditional rendering based on event date */}
+                {(() => {
+                  const eventDate = new Date(event.date);
+                  const today = new Date();
+                  // Set both to midnight for date-only comparison
+                  eventDate.setHours(0,0,0,0);
+                  today.setHours(0,0,0,0);
+                  if (eventDate <= today) {
+                    return (
+                      <button 
+                        onClick={() => router.push(`/seat-selection/${event.id}`)}
+                        className="w-full bg-[#D84040] text-white py-4 rounded-full hover:bg-[#A31D1D] transition-colors font-bold text-lg font-domine mt-4"
+                      >
+                        Buy Tickets
+                      </button>
+                    );
+                  } else {
+                    return (
+                      <p className="text-center text-gray-600 font-domine text-base mt-4">
+                        Button will appear here once ready
+                      </p>
+                    );
+                  }
+                })()}
               </div>
             </div>
           </div>
         </div>
-      </main>
-
+      </div>
       <style jsx>{`
         .line-clamp-3 {
           display: -webkit-box;
@@ -397,7 +354,6 @@ export default function EventDetail() {
           -webkit-box-orient: vertical;
           overflow: hidden;
         }
-
         @keyframes zoomInOut {
           0%, 100% {
             transform: scale(1.1);
