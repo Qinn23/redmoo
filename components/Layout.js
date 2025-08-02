@@ -1,0 +1,116 @@
+import React from "react";
+import { useRouter } from "next/router";
+import { Chonburi, Domine } from "next/font/google";
+
+const chonburi = Chonburi({
+  variable: "--font-chonburi",
+  subsets: ["latin"],
+  weight: "400",
+});
+const domine = Domine({
+  variable: "--font-domine",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+});
+
+export default function Layout({ children }) {
+  const router = useRouter();
+  return (
+    <div className={`${chonburi.variable} ${domine.variable} min-h-screen bg-gradient-to-br from-[#F8F2DE] to-[#ECDCBF]`}>
+      {/* Header */}
+      <header className="bg-white shadow-lg border-b-2 border-[#D84040] animate-fade-in">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            {/* Logo */}
+            <div className="flex items-center space-x-3 cursor-pointer" onClick={() => router.push("/")}> 
+              <div className="w-10 h-10 bg-[#D84040] rounded-full flex items-center justify-center">
+                <span className="text-white font-bold text-xl font-chonburi">R</span>
+              </div>
+              <span className="text-2xl font-bold text-[#D84040] font-chonburi">RedMoo</span>
+            </div>
+            {/* Navigation + Connect Wallet */}
+            <div className="flex items-center space-x-4">
+              <nav className="flex items-center space-x-4">
+                <button className="text-gray-700 hover:text-[#D84040] font-medium transition-all duration-200 font-domine hover:scale-110 transform" onClick={() => router.push('/buy')}>
+                  Buy
+                </button>
+                <button className="text-gray-700 hover:text-[#D84040] font-medium transition-all duration-200 font-domine hover:scale-110 transform" onClick={() => router.push('/sell')}>
+                  Sell
+                </button>
+              </nav>
+              <button className="ml-6 bg-[#D84040] text-white px-6 py-2 rounded-full hover:bg-[#A31D1D] transition-all duration-200 font-medium font-domine hover:scale-110 transform hover:shadow-lg" onClick={() => router.push('/connect-wallet')}>
+                Connect Wallet
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">{children}</main>
+      {/* Footer */}
+      <footer className="bg-gray-800 text-white mt-16 animate-fade-in-up" style={{ animationDelay: '0.8s' }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="grid md:grid-cols-4 gap-8">
+            {/* Company Info */}
+            <div>
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="w-8 h-8 bg-[#D84040] rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold text-sm font-chonburi">R</span>
+                </div>
+                <span className="text-xl font-bold font-chonburi">RedMoo</span>
+              </div>
+              <p className="text-gray-300 mb-4 font-domine">
+                Your trusted platform for secure ticket reselling with blockchain technology.
+              </p>
+              <p className="text-sm text-gray-400 font-domine">
+                © 2025 RedMoo. All rights reserved.
+              </p>
+            </div>
+            {/* Partners */}
+            <div>
+              <h3 className="text-lg font-semibold mb-4 font-domine">Our Partners</h3>
+              <ul className="space-y-2 text-gray-300 font-domine">
+                <li>Event Organizers</li>
+                <li>Blockchain Partners</li>
+                <li>Payment Processors</li>
+                <li>Security Providers</li>
+              </ul>
+            </div>
+            {/* About Us */}
+            <div>
+              <h3 className="text-lg font-semibold mb-4 font-domine">About Us</h3>
+              <ul className="space-y-2 text-gray-300 font-domine">
+                <li>Our Mission</li>
+                <li>Team</li>
+                <li>Careers</li>
+                <li>Press</li>
+              </ul>
+            </div>
+            {/* Contact */}
+            <div>
+              <h3 className="text-lg font-semibold mb-4 font-domine">Contact Us</h3>
+              <ul className="space-y-2 text-gray-300 font-domine">
+                <li>Support</li>
+                <li>Sales</li>
+                <li>Partnerships</li>
+                <li>Legal</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </footer>
+      <style jsx>{`
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes fadeInUp {
+          from { opacity: 0; transform: translateY(30px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in { animation: fadeIn 0.8s ease-out; }
+        .animate-fade-in-up { animation: fadeInUp 0.8s ease-out forwards; opacity: 0; }
+      `}</style>
+    </div>
+  );
+}

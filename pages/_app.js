@@ -1,10 +1,10 @@
 import "@/styles/globals.css";
-import { WalletKitProvider } from '@mysten/wallet-kit';
+import Layout from "../components/Layout";
 
 export default function App({ Component, pageProps }) {
   return (
-    <WalletKitProvider>
+    <Layout>
       <Component {...pageProps} />
-    </WalletKitProvider>
+    </Layout>
   );
 }

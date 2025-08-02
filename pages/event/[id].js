@@ -126,7 +126,6 @@ export default function EventDetail() {
   const router = useRouter();
   const { id } = router.query;
   const [event, setEvent] = useState(null);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [expandedSections, setExpandedSections] = useState({
     importantNotices: false,
     termsAndConditions: false
@@ -185,23 +184,6 @@ export default function EventDetail() {
               <button className="text-gray-700 hover:text-[#D84040] font-medium transition-colors font-domine">
                 Sell
               </button>
-              {isLoggedIn && (
-                <button className="text-gray-700 hover:text-[#D84040] font-medium transition-colors font-domine">
-                  My Tickets
-                </button>
-              )}
-              {!isLoggedIn ? (
-                <button 
-                  onClick={() => setIsLoggedIn(true)}
-                  className="bg-[#D84040] text-white px-6 py-2 rounded-full hover:bg-[#A31D1D] transition-colors font-medium font-domine"
-                >
-                  Sign In
-                </button>
-              ) : (
-                <button className="text-gray-700 hover:text-[#D84040] font-medium transition-colors font-domine">
-                  Profile
-                </button>
-              )}
             </nav>
           </div>
         </div>
@@ -395,14 +377,12 @@ export default function EventDetail() {
                   </div>
 
                   <button className="w-full bg-[#D84040] text-white py-4 rounded-full hover:bg-[#A31D1D] transition-colors font-bold text-lg font-domine">
-                    {isLoggedIn ? 'Buy Tickets' : 'Sign In to Purchase'}
+                    Buy Tickets
                   </button>
 
-                  {!isLoggedIn && (
-                    <p className="text-center text-sm text-gray-600 font-domine">
-                      You need to sign in to purchase tickets
-                    </p>
-                  )}
+                  <p className="text-center text-sm text-gray-600 font-domine">
+                    You need to sign in to purchase tickets
+                  </p>
                 </div>
               </div>
             </div>
