@@ -1,6 +1,7 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/router";
 import { Chonburi, Domine } from "next/font/google";
+import { useSuiWallet, contractUtils } from "../../wallet/useWallet";
 
 // Function to add cache-busting parameter to image URLs
 const addCacheBuster = (url) => {
@@ -131,12 +132,103 @@ export default function SeatSelection() {
     normal: []
   });
 
+  // Wallet integration
+  const {
+    isConnected,
+    currentAccount,
+    balance,
+    executeTransaction,
+    getFormattedBalance,
+    hasSufficientBalance
+  } = useSuiWallet();
+
+  // Transaction state
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [transactionStatus, setTransactionStatus] = useState(null);
+  const [availableTickets, setAvailableTickets] = useState(0);
+  
+  // Demo contract addresses (these would be deployed addresses in production)
+  // TODO: Replace these with actual deployed contract addresses when smart contract is live
+  const DEMO_PACKAGE_ID = "0x1"; // Replace with actual deployed package ID
+  const DEMO_EVENT_OBJECT_ID = "0x2"; // Replace with actual event object ID
+  const DEMO_WALLET_TRACKER_ID = "0x3"; // Replace with actual wallet tracker ID
+  const DEMO_CLOCK_OBJECT_ID = "0x6"; // Sui clock object
+
+  /*
+   * DEPLOYMENT CHECKLIST:
+   * 1. Deploy the smart contract to Sui devnet/mainnet
+   * 2. Replace demo object IDs above with actual deployed addresses
+   * 3. Uncomment the real transaction code in proceedToCheckout()
+   * 4. Remove the demo simulation logic
+   * 5. Update the demo mode notices in the UI
+   */
+
   useEffect(() => {
     if (id) {
       const foundEvent = sampleEvents.find(e => e.id === parseInt(id));
       setEvent(foundEvent);
     }
   }, [id]);
+
+  // Function to calculate available tickets based on purchases
+  const calculateAvailableTickets = useCallback(() => {
+    if (!event) return 0;
+    
+    try {
+      const demoPurchases = JSON.parse(localStorage.getItem('demo_purchases') || '[]');
+      const eventPurchases = demoPurchases.filter(purchase => 
+        purchase.eventId === parseInt(id) || purchase.eventName === event.name
+      );
+      
+      // Count total purchased tickets for this event
+      let totalPurchased = 0;
+      eventPurchases.forEach(purchase => {
+        totalPurchased += purchase.seats.length;
+      });
+      
+      const available = Math.max(0, event.availableTickets - totalPurchased);
+      
+      console.log(`🎫 Seat Selection - Event "${event.name}" ticket calculation:`, {
+        originalAvailable: event.availableTickets,
+        totalPurchased: totalPurchased,
+        currentAvailable: available
+      });
+      
+      return available;
+    } catch (error) {
+      console.error('Error calculating available tickets:', error);
+      return event.availableTickets; // Fallback to original count
+    }
+  }, [event, id]);
+
+  // Update available tickets when event changes or purchases are made
+  useEffect(() => {
+    if (event) {
+      const available = calculateAvailableTickets();
+      setAvailableTickets(available);
+    }
+  }, [event, calculateAvailableTickets]);
+
+  // State for triggering seat refresh when purchases are cleared
+  const [seatRefreshKey, setSeatRefreshKey] = useState(0);
+
+  // Listen for storage changes to refresh seats when purchases are cleared
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === 'demo_purchases' || e.type === 'storage') {
+        console.log('🔄 Demo purchases changed, refreshing seats and ticket count...');
+        setSeatRefreshKey(prev => prev + 1);
+        // Also update available tickets count
+        if (event) {
+          const available = calculateAvailableTickets();
+          setAvailableTickets(available);
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [event, calculateAvailableTickets]);
 
   // Generate seats based on total tickets with realistic layout
   // This hook must be called before any conditional returns
@@ -148,8 +240,9 @@ export default function SeatSelection() {
     const actualTotalSeats = event.totalTickets;
     const totalSeats = Math.min(actualTotalSeats, maxDisplaySeats);
     
-    // Scale available seats proportionally
-    const availableSeats = Math.floor((event.availableTickets / actualTotalSeats) * totalSeats);
+    // Scale available seats proportionally  
+    const dynamicAvailableTickets = availableTickets > 0 ? availableTickets : event.availableTickets;
+    const availableSeats = Math.floor((dynamicAvailableTickets / actualTotalSeats) * totalSeats);
     const soldSeats = totalSeats - availableSeats;
     
     // Create rows (approximately 10-15 seats per row)
@@ -210,6 +303,30 @@ export default function SeatSelection() {
       }
     });
     
+    // Check for purchased seats from demo purchases and mark them as sold
+    try {
+      const demoPurchases = JSON.parse(localStorage.getItem('demo_purchases') || '[]');
+      const eventPurchases = demoPurchases.filter(purchase => 
+        purchase.eventId === parseInt(id) || purchase.eventName === event.name
+      );
+      
+      console.log('🎫 Found purchases for this event:', eventPurchases.length);
+      
+      // Mark purchased seats as sold
+      eventPurchases.forEach(purchase => {
+        purchase.seats.forEach(purchasedSeat => {
+          // Find the seat by its seat number (e.g., "A1", "B5")
+          const seatToMark = seats.find(seat => seat.number === purchasedSeat.seatId);
+          if (seatToMark) {
+            seatToMark.status = 'sold';
+            console.log(`🔒 Marked seat ${purchasedSeat.seatId} as sold`);
+          }
+        });
+      });
+    } catch (error) {
+      console.error('❌ Error checking purchased seats:', error);
+    }
+    
     // Group seats by row for easier rendering
     const groupedSeats = {};
     seats.forEach(seat => {
@@ -220,7 +337,7 @@ export default function SeatSelection() {
     });
     
     return groupedSeats;
-  }, [event]);
+  }, [event, id, seatRefreshKey, availableTickets]);
 
   // Early return must be after all hooks
   if (!event) {
@@ -303,16 +420,201 @@ export default function SeatSelection() {
     return selectedSeats.vip.length + selectedSeats.normal.length;
   };
 
-  const proceedToCheckout = () => {
+  const proceedToCheckout = async () => {
     if (getTotalSelectedSeats() === 0) {
       alert('Please select at least one seat');
       return;
     }
+
+    if (!isConnected) {
+      alert('Please connect your wallet first');
+      router.push('/connect-wallet');
+      return;
+    }
+
+    const total = calculateTotal() * 1.04; // Include booking fee
+    const totalInMist = contractUtils.suiToMist(total.toString());
+
+    // Check if user has sufficient balance
+    if (!hasSufficientBalance(totalInMist)) {
+      alert(`Insufficient balance. You need ${total.toFixed(2)} SUI but only have ${getFormattedBalance()} SUI`);
+      return;
+    }
+
+    setIsProcessing(true);
+    setTransactionStatus('Preparing demo transaction...');
+
+    try {
+      console.log('🎫 Starting demo ticket purchase...');
+      console.log('ℹ️ DEMO MODE: This is a simulated purchase. No real blockchain transaction will occur.');
+      console.log('💡 Your wallet balance will NOT be affected during this demo.');
+      
+      // DEMO MODE: Since smart contract isn't deployed, simulate the purchase
+      const allSeats = getAllSeats();
+      const selectedSeatsList = [
+        ...selectedSeats.vip.map(id => allSeats.find(s => s.id === id)).filter(Boolean),
+        ...selectedSeats.normal.map(id => allSeats.find(s => s.id === id)).filter(Boolean)
+      ];
+
+      console.log('🎯 Selected seats for purchase:', selectedSeatsList);
+      console.log('💰 Total amount (demo):', total.toFixed(2), 'SUI');
+
+      // Simulate transaction delay
+      setTransactionStatus('Creating NFT tickets...');
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      setTransactionStatus('Minting on blockchain...');
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      setTransactionStatus('Finalizing purchase...');
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // TODO: When smart contract is deployed, replace this demo with real transaction
+      /*
+      // Real transaction code for when contract is deployed:
+      const purchasePromises = [];
+
+      for (const seat of selectedSeatsList) {
+        const seatPrice = contractUtils.suiToMist((seat.price * 1.04).toString());
+        
+        const transaction = contractUtils.createPurchaseTransaction({
+          eventObjectId: ACTUAL_EVENT_OBJECT_ID,
+          walletTrackerObjectId: ACTUAL_WALLET_TRACKER_ID,
+          suiAmount: seatPrice,
+          seatId: seat.number,
+          seatType: seat.type === 'vip' ? 1 : 2,
+          imageUrl: generateTicketImageUrl(event, seat),
+          metadataUrl: generateTicketMetadataUrl(event, seat),
+          clockObjectId: '0x6', // Sui clock object
+          packageId: DEPLOYED_PACKAGE_ID
+        });
+
+        purchasePromises.push(
+          executeTransaction(transaction).then(result => ({
+            seat,
+            result,
+            success: true
+          }))
+        );
+      }
+
+      const results = await Promise.all(purchasePromises);
+      const successfulPurchases = results.filter(r => r.success);
+      */
+
+      setTransactionStatus('Purchase completed! 🎉');
+      
+      // Show success message for demo
+      const ticketCount = selectedSeatsList.length;
+      const successMessage = `🎉 Demo Purchase Successful!\n\n` +
+        `✅ ${ticketCount} NFT ticket${ticketCount > 1 ? 's' : ''} purchased (simulated)\n` +
+        `💰 Demo amount: ${total.toFixed(2)} SUI (not charged)\n` +
+        `🎫 Seat${ticketCount > 1 ? 's' : ''}: ${selectedSeatsList.map(s => s.number).join(', ')}\n` +
+        `📍 Event: ${event.name}\n\n` +
+        `🔧 Demo Notice:\n` +
+        `• No real payment was processed\n` +
+        `• Your wallet balance is unchanged\n` +
+        `• Mock NFT tickets will show in your profile\n` +
+        `• You'll be redirected to your profile in 3 seconds\n\n` +
+        `Real transactions will work once the smart contract is deployed`;
+
+      alert(successMessage);
+      
+      // Update status to show redirect
+      setTransactionStatus('Redirecting to your profile... 🔄');
+      
+      console.log('✅ Demo purchase completed successfully!');
+      console.log('📊 Summary:', {
+        tickets: ticketCount,
+        seats: selectedSeatsList.map(s => s.number),
+        totalAmount: total.toFixed(2) + ' SUI (demo)',
+        event: event.name
+      });
+      
+      // Save purchase to localStorage for demo tracking
+      const purchaseData = {
+        id: `purchase-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        eventId: event.id,
+        eventName: event.name,
+        venue: event.venue,
+        eventDate: new Date(event.date).getTime(),
+        seats: selectedSeatsList.map(seat => ({
+          seatId: seat.number,
+          seatType: seat.type === 'vip' ? 1 : 2, // 1 = VIP, 2 = Standard
+          price: seat.price
+        })),
+        totalAmount: total,
+        purchaseDate: Date.now(),
+        walletAddress: currentAccount?.address,
+        transactionStatus: 'completed_demo'
+      };
+
+      // Get existing purchases and add new one
+      const existingPurchases = JSON.parse(localStorage.getItem('demo_purchases') || '[]');
+      existingPurchases.push(purchaseData);
+      localStorage.setItem('demo_purchases', JSON.stringify(existingPurchases));
+      
+      console.log('💾 Purchase saved to localStorage:', purchaseData);
+      
+      // Trigger storage event to refresh seat availability in other tabs/pages
+      window.dispatchEvent(new StorageEvent('storage', {
+        key: 'demo_purchases',
+        oldValue: JSON.stringify(existingPurchases.slice(0, -1)),
+        newValue: JSON.stringify(existingPurchases),
+        url: window.location.href,
+        storageArea: localStorage
+      }));
+      
+      // Clear selections and redirect to profile
+      setSelectedSeats({ vip: [], normal: [] });
+      
+      console.log('🔄 Preparing to redirect to profile page...');
+      console.log('💡 Wallet connection status:', isConnected);
+      console.log('👤 Current account:', currentAccount?.address);
+      
+      setTimeout(() => {
+        console.log('🏠 Redirecting to profile page...');
+        router.push('/profile?purchase=success');
+      }, 3000); // Increased delay to 3 seconds for better UX
+
+    } catch (error) {
+      console.error('❌ Demo transaction error:', error);
+      setTransactionStatus('Demo transaction failed');
+      
+      const errorMessage = 'Demo purchase failed. This is expected since the smart contract is not yet deployed. ' +
+        'In production, this would be a real blockchain transaction.';
+      
+      alert(errorMessage);
+    } finally {
+      setIsProcessing(false);
+      setTimeout(() => setTransactionStatus(null), 3000);
+    }
+  };
+
+  // Helper functions for NFT metadata
+  const generateTicketImageUrl = (event, seat) => {
+    // In production, this would generate actual ticket images
+    return `https://api.placeholder.com/600x400/D84040/FFFFFF?text=${encodeURIComponent(event.name + ' - ' + seat.number)}`;
+  };
+
+  const generateTicketMetadataUrl = (event, seat) => {
+    // In production, this would point to actual metadata JSON
+    const metadata = {
+      name: `${event.name} - Seat ${seat.number}`,
+      description: `Ticket for ${event.name} at ${event.venue}`,
+      image: generateTicketImageUrl(event, seat),
+      attributes: [
+        { trait_type: "Event", value: event.name },
+        { trait_type: "Venue", value: event.venue },
+        { trait_type: "Date", value: event.date },
+        { trait_type: "Seat", value: seat.number },
+        { trait_type: "Type", value: seat.type.toUpperCase() },
+        { trait_type: "Price", value: `${seat.price} SUI` }
+      ]
+    };
     
-    // For now, just show an alert with the selection
-    const total = calculateTotal();
-    const totalSeats = getTotalSelectedSeats();
-    alert(`Proceeding to checkout:\nSeats selected: ${totalSeats}\nTotal: $${total.toFixed(2)}`);
+    // In production, upload this to IPFS or similar
+    return `data:application/json;base64,${btoa(JSON.stringify(metadata))}`;
   };
 
   return (
@@ -335,7 +637,7 @@ export default function SeatSelection() {
           <div className="text-gray-600 font-domine">
             <p>{event.date} • {event.time} • {event.venue}</p>
             <p className="text-sm mt-1">
-              {event.availableTickets} available out of {event.totalTickets} total seats
+              {availableTickets} available out of {event.totalTickets} total seats
               {event.totalTickets > 200 && (
                 <span className="block text-xs text-orange-600 mt-1">
                   * Showing representative sample of {Math.min(event.totalTickets, 200)} seats for performance
@@ -344,6 +646,8 @@ export default function SeatSelection() {
             </p>
           </div>
         </div>
+
+
 
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Seat Selection Area */}
@@ -473,6 +777,49 @@ export default function SeatSelection() {
           <div className="bg-gray-50 rounded-lg p-6 h-fit">
             <h2 className="text-2xl font-bold text-[#A31D1D] font-chonburi mb-4">Order Summary</h2>
             
+            {/* Wallet Status */}
+            <div className="bg-white border border-gray-200 rounded-lg p-4 mb-6">
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-semibold font-domine">Wallet Status</span>
+                <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+              </div>
+              {isConnected ? (
+                <div className="space-y-1">
+                  <p className="text-sm text-gray-600 font-domine">
+                    Address: {contractUtils.formatAddress(currentAccount?.address)}
+                  </p>
+                  <p className="text-sm text-gray-600 font-domine">
+                    Balance: {getFormattedBalance()} SUI
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-sm text-red-600 font-domine">Not connected</p>
+                  <button 
+                    onClick={() => router.push('/connect-wallet')}
+                    className="text-sm bg-[#D84040] text-white px-3 py-1 rounded font-domine hover:bg-[#A31D1D]"
+                  >
+                    Connect Wallet
+                  </button>
+                </div>
+              )}
+              
+              {/* Transaction Status */}
+              {transactionStatus && (
+                <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded">
+                  <div className="flex items-center">
+                    {isProcessing && (
+                      <svg className="animate-spin h-4 w-4 mr-2 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+                      </svg>
+                    )}
+                    <span className="text-sm text-blue-800 font-domine">{transactionStatus}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+            
             {/* Ticket Limit Indicator */}
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-6">
               <div className="flex justify-between items-center">
@@ -571,15 +918,34 @@ export default function SeatSelection() {
 
             <button 
               onClick={proceedToCheckout}
-              disabled={getTotalSelectedSeats() === 0}
-              className={`w-full py-4 rounded-full font-bold text-lg font-domine transition-colors ${
-                getTotalSelectedSeats() > 0
+              disabled={getTotalSelectedSeats() === 0 || !isConnected || isProcessing}
+              className={`w-full py-4 rounded-full font-bold text-lg font-domine transition-colors flex items-center justify-center ${
+                getTotalSelectedSeats() > 0 && isConnected && !isProcessing
                   ? 'bg-[#D84040] text-white hover:bg-[#A31D1D]'
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
             >
-              {getTotalSelectedSeats() > 0 ? 'Proceed to Checkout' : 'Select Seats to Continue'}
+              {isProcessing && (
+                <svg className="animate-spin h-5 w-5 mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+                </svg>
+              )}
+              {isProcessing
+                ? 'Processing Demo...'
+                : !isConnected
+                ? 'Connect Wallet to Continue'
+                : getTotalSelectedSeats() === 0
+                ? 'Select Seats to Continue'
+                : 'Demo Purchase (No Real Transaction)'
+              }
             </button>
+            
+            {getTotalSelectedSeats() > 0 && isConnected && (
+              <p className="text-xs text-gray-500 text-center mt-2 font-domine">
+                🔧 Demo mode: This will simulate a purchase without real blockchain transactions
+              </p>
+            )}
           </div>
         </div>
       </div>
