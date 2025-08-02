@@ -9,23 +9,29 @@ const sampleEvents = [
 
 export default function Buy() {
   const [search, setSearch] = useState("");
-  const filteredEvents = sampleEvents.filter(e =>
-    e.name.toLowerCase().includes(search.toLowerCase()) ||
-    e.venue.toLowerCase().includes(search.toLowerCase())
-  );
+  // Only show events if search is not empty
+  const filteredEvents = search
+    ? sampleEvents.filter(e =>
+        e.name.toLowerCase().includes(search.toLowerCase()) ||
+        e.venue.toLowerCase().includes(search.toLowerCase())
+      )
+    : [];
   return (
     <div className="flex items-center justify-center h-full">
       <div className="bg-white p-8 rounded-lg shadow-lg text-center w-full max-w-2xl">
         <h1 className="text-3xl font-bold text-[#A31D1D] mb-4 font-chonburi">Buy Tickets</h1>
         <p className="text-[#A31D1D] font-domine mb-6 text-base">Here are second-hand tickets resold by other users.</p>
-        <input
-          className="border px-4 py-2 rounded w-full mb-6 font-domine"
-          placeholder="Search for events to buy..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-        />
+        <div className="flex justify-center mb-6">
+          <input
+            className="border px-4 py-2 rounded font-domine w-full max-w-7xl"
+            style={{ minWidth: '600px' }}
+            placeholder="Search for events to buy..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+        </div>
         <div className="grid gap-4">
-          {filteredEvents.length === 0 && <div className="text-gray-500">No events found.</div>}
+          {filteredEvents.length === 0 && search && <div className="text-gray-500">No events found.</div>}
           {filteredEvents.map(event => (
             <div key={event.id} className="flex flex-col md:flex-row items-center justify-between bg-[#F8F2DE] rounded p-4 shadow">
               <div className="flex-1 text-left">

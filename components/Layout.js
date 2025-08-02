@@ -48,10 +48,7 @@ export default function Layout({ children }) {
             <div className="flex items-center space-x-4">
               <nav className="flex items-center space-x-4">
                 <button className="text-gray-700 hover:text-[#D84040] font-medium transition-all duration-200 font-domine hover:scale-110 transform" onClick={() => router.push('/buy')}>
-                  Buy
-                </button>
-                <button className="text-gray-700 hover:text-[#D84040] font-medium transition-all duration-200 font-domine hover:scale-110 transform" onClick={() => router.push('/sell')}>
-                  Sell
+                  Buy Tickets
                 </button>
               </nav>
               {!walletConnected ? (
