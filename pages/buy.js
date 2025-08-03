@@ -13,6 +13,7 @@ export default function Buy() {
   const [search, setSearch] = useState("");
   const [walletConnected, setWalletConnected] = useState(false);
   const [showWalletMessage, setShowWalletMessage] = useState(false);
+  // REMOVED: const [ticketType, setTicketType] = useState("resale");
 
   // Track wallet connection status
   useEffect(() => {
@@ -51,7 +52,9 @@ export default function Buy() {
     <div className="flex items-center justify-center h-full">
       <div className="bg-white p-8 rounded-lg shadow-lg text-center w-full max-w-2xl">
         <h1 className="text-3xl font-bold text-[#A31D1D] mb-4 font-chonburi">Buy Tickets</h1>
-        <p className="text-[#A31D1D] font-domine mb-6 text-base">Here are second-hand tickets resold by other users.</p>
+        <p className="text-[#A31D1D] font-domine mb-6 text-base">
+          Here are tickets available for purchase.
+        </p>
         {/* Wallet Connection Message */}
         {showWalletMessage && (
           <div className="mb-6 p-4 bg-[#FEF2F2] border border-[#FECACA] rounded-lg">

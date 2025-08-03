@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 5, "column": 0}, "map": {"version":3,"sources":["file:///D:/printx/redmoo/pages/connect-wallet.js"],"sourcesContent":["export default function ConnectWallet() {\r\n  return (\r\n    <div className=\"flex items-center justify-center h-full\">\r\n      <div className=\"bg-white p-8 rounded-lg shadow-lg text-center\">\r\n        <h1 className=\"text-3xl font-bold text-[#A31D1D] mb-4 font-chonburi\">Connect Your Wallet</h1>\r\n        <p className=\"text-gray-700 font-domine mb-4\">This is a placeholder page for wallet connection. Implement your wallet logic here.</p>\r\n      </div>\r\n    </div>\r\n  );\r\n}"],"names":[],"mappings":";;;;;AAAe,SAAS;IACtB,qBACE,qKAAC;QAAI,WAAU;kBACb,cAAA,qKAAC;YAAI,WAAU;;8BACb,qKAAC;oBAAG,WAAU;8BAAuD;;;;;;8BACrE,qKAAC;oBAAE,WAAU;8BAAiC;;;;;;;;;;;;;;;;;AAItD","debugId":null}}]
+}
