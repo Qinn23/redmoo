@@ -43,12 +43,12 @@ function TicketCard({ ticket, onViewDetails }) {
             <p className="text-sm opacity-90 font-domine">🎫 NFT TICKET 🎫</p>
           </div>
         </div>
-        <div className={`absolute top-4 right-4 rounded-full px-3 py-1 ${
+        <div className={`absolute top-3 right-3 rounded-lg px-3 py-1.5 ${
           ticket.seatType === 1 
-            ? 'bg-yellow-400 border-2 border-yellow-600' 
-            : 'bg-blue-500 border-2 border-blue-700'
+            ? 'bg-yellow-400 border border-yellow-600' 
+            : 'bg-blue-500 border border-blue-700'
         }`}>
-          <span className={`text-xs font-semibold font-domine ${
+          <span className={`text-xs font-bold font-domine ${
             ticket.seatType === 1 
               ? 'text-yellow-900' 
               : 'text-white'
@@ -82,19 +82,16 @@ function TicketCard({ ticket, onViewDetails }) {
         </div>
 
         <div className="flex justify-between items-center pt-4 border-t border-gray-200">
-          <div>
+          <div className="flex-1">
             <p className="text-xs text-gray-500 font-domine">Purchased</p>
             <p className="text-sm font-medium text-gray-700 font-domine">{formatDate(ticket.purchaseDate)}</p>
           </div>
-          <div className="flex space-x-2">
+          <div className="ml-6">
             <button 
               onClick={() => onViewDetails(ticket)}
-              className="bg-gradient-to-r from-[#D84040] to-[#A31D1D] text-white px-4 py-2 rounded-lg text-sm font-domine hover:from-[#A31D1D] hover:to-[#8B1919] transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105 flex items-center space-x-2"
+              className="bg-gradient-to-r from-[#D84040] to-[#A31D1D] text-white px-6 py-2.5 rounded-lg text-sm font-domine hover:from-[#A31D1D] hover:to-[#8B1919] transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105 whitespace-nowrap"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span>Check-In</span>
+              Check-In
             </button>
           </div>
         </div>
@@ -719,7 +716,7 @@ export default function Profile() {
   }
 
   return (
-    <div className={`${chonburi.variable} ${domine.variable} min-h-screen bg-gradient-to-br from-[#F8F2DE] to-[#ECDCBF] py-8`}>
+    <div className={`${chonburi.variable} ${domine.variable} min-h-screen bg-gradient-to-br from-[#F8F2DE] to-[#ECDCBF]`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col lg:flex-row min-h-[700px] border border-[#F8F2DE]">
           {/* Left column: navigation */}

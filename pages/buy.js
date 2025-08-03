@@ -13,17 +13,16 @@ export default function Buy() {
   const [search, setSearch] = useState("");
   const [walletConnected, setWalletConnected] = useState(false);
   const [showWalletMessage, setShowWalletMessage] = useState(false);
+  // REMOVED: const [ticketType, setTicketType] = useState("resale");
 
   // Track wallet connection status
   useEffect(() => {
     setWalletConnected(typeof window !== 'undefined' && localStorage.getItem('walletConnected') === 'true');
     const onStorage = () => setWalletConnected(localStorage.getItem('walletConnected') === 'true');
     window.addEventListener('storage', onStorage);
-    
     const interval = setInterval(() => {
       setWalletConnected(localStorage.getItem('walletConnected') === 'true');
     }, 500);
-    
     return () => {
       window.removeEventListener('storage', onStorage);
       clearInterval(interval);
@@ -48,12 +47,14 @@ export default function Buy() {
       router.push(`/event/${event.id}`);
     }
   };
+
   return (
     <div className="flex items-center justify-center h-full">
       <div className="bg-white p-8 rounded-lg shadow-lg text-center w-full max-w-2xl">
         <h1 className="text-3xl font-bold text-[#A31D1D] mb-4 font-chonburi">Buy Tickets</h1>
-        <p className="text-[#A31D1D] font-domine mb-6 text-base">Here are second-hand tickets resold by other users.</p>
-        
+        <p className="text-[#A31D1D] font-domine mb-6 text-base">
+          Here are tickets available for purchase.
+        </p>
         {/* Wallet Connection Message */}
         {showWalletMessage && (
           <div className="mb-6 p-4 bg-[#FEF2F2] border border-[#FECACA] rounded-lg">
@@ -62,7 +63,6 @@ export default function Buy() {
             </p>
           </div>
         )}
-        
         <div className="flex justify-center mb-6">
           <input
             className="border px-4 py-2 rounded font-domine w-full max-w-7xl"
@@ -82,10 +82,10 @@ export default function Buy() {
                 <div className="text-[#D84040] font-bold font-domine">{event.price}</div>
               </div>
               <button 
-                onClick={() => handleBuyClick(event)}
+                onClick={() => router.push(`/resell/${event.id}`)}
                 className="mt-4 md:mt-0 md:ml-6 bg-[#D84040] text-white px-6 py-2 rounded-full hover:bg-[#A31D1D] font-domine font-medium transition-all"
               >
-                Buy
+                View Details
               </button>
             </div>
           ))}

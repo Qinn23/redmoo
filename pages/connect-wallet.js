@@ -165,7 +165,7 @@ export default function ConnectWallet() {
                 {wallets.length === 0 && (
                   <div className="text-gray-500 mb-2 text-center">
                     No Sui wallets detected.<br />
-                    <a href="https://suiet.app/" target="_blank" rel="noopener noreferrer" className="text-[#D84040] underline">Install Suiet</a>
+                    <a href="https://suiet.app/" target="_blank" rel="noopener noreferrer" className="text-[#D84040] underline">Install Suiet</a> or <a href="https://wallet.sui.io/" target="_blank" rel="noopener noreferrer" className="text-[#D84040] underline">Sui Wallet</a>
                   </div>
                 )}
                 {wallets.map((wallet) => (
