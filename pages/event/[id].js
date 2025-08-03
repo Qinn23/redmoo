@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/router";
 import { Chonburi, Domine } from "next/font/google";
 
@@ -126,6 +126,7 @@ export default function EventDetail() {
   const router = useRouter();
   const { id } = router.query;
   const [event, setEvent] = useState(null);
+  const [availableTickets, setAvailableTickets] = useState(0);
   const [expandedSections, setExpandedSections] = useState({
     importantNotices: false,
     termsAndConditions: false
@@ -137,6 +138,61 @@ export default function EventDetail() {
       setEvent(foundEvent);
     }
   }, [id]);
+
+  // Function to calculate available tickets based on purchases
+  const calculateAvailableTickets = useCallback(() => {
+    if (!event) return 0;
+    
+    try {
+      const demoPurchases = JSON.parse(localStorage.getItem('demo_purchases') || '[]');
+      const eventPurchases = demoPurchases.filter(purchase => 
+        purchase.eventId === parseInt(id) || purchase.eventName === event.name
+      );
+      
+      // Count total purchased tickets for this event
+      let totalPurchased = 0;
+      eventPurchases.forEach(purchase => {
+        totalPurchased += purchase.seats.length;
+      });
+      
+      const available = Math.max(0, event.availableTickets - totalPurchased);
+      
+      console.log(`🎫 Event "${event.name}" ticket calculation:`, {
+        originalAvailable: event.availableTickets,
+        totalPurchased: totalPurchased,
+        currentAvailable: available
+      });
+      
+      return available;
+    } catch (error) {
+      console.error('Error calculating available tickets:', error);
+      return event.availableTickets; // Fallback to original count
+    }
+  }, [event, id]);
+
+  // Update available tickets when event changes or purchases are made
+  useEffect(() => {
+    if (event) {
+      const available = calculateAvailableTickets();
+      setAvailableTickets(available);
+    }
+  }, [event, calculateAvailableTickets]);
+
+  // Listen for storage changes to update ticket count
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === 'demo_purchases' || e.type === 'storage') {
+        console.log('🔄 Demo purchases changed, updating available tickets...');
+        if (event) {
+          const available = calculateAvailableTickets();
+          setAvailableTickets(available);
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [event, calculateAvailableTickets]);
 
   if (!event) {
     return (
@@ -266,7 +322,7 @@ export default function EventDetail() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                       </svg>
                       <div>
-                        <p className="font-semibold font-domine">{event.availableTickets} tickets available</p>
+                        <p className="font-semibold font-domine">{availableTickets} tickets available</p>
                         <p className="text-gray-600 text-sm font-domine">out of {event.totalTickets} total</p>
                       </div>
                     </div>
