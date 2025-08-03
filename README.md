@@ -1,6 +1,55 @@
+
+## 🎟️ Redmoo Ticket Platform
+
+Redmoo is a decentralized event ticketing platform built on the Sui blockchain, featuring NFT tickets, wallet integration, and smart contract-powered transfers.
+
+Our platform uses a secure identity-linked ticketing system where each ticket is tied to a user’s SUI wallet address. Users can buy up to 4 tickets per event (not per transaction). We also offer a controlled resale process, allowing each ticket to be resold only once, with a maximum 10% price increase, preventing scalping and ensuring fairness.
+
+## 💡 Inspiration: How We Came Up With This Idea
+
+We noticed that many people struggle to buy tickets for popular events because large groups of scalpers purchase bulk quantities to resell at extremely high prices. As fans ourselves, we experienced the frustration of waiting in line online, only to see tickets sold out within minutes.
+
+This inspired us to think:
+
+    "What if there was a platform that not only made it easy to resell tickets legally but also guaranteed that each ticket truly belonged to the buyer?"
+
+Other key reasons behind our idea:
+
+   - 🎯 Personal Experience: Several team members missed concerts and sports events they were passionate about because tickets were instantly bought up and resold for 3–5 times the original price.
+
+   - 🕵️ Lack of Transparency: Many people end up buying tickets through Xiaohongshu, Instagram, or WhatsApp sellers who often disappear after taking payment, leaving buyers scammed with no way to recover their money.
+
+   - 🛡️ No Buyer Protection: If a resold ticket turned out to be fake or duplicated, buyers usually lost their money and had no support.
+
+   - 🌍 Growing Scalper Problem: As automated bots have become more advanced, ticket scalping has turned into a global issue, harming fans and performers alike.
+
+   - 🪪 Weak Identity Verification: Most ticketing systems rely only on email addresses or printed PDFs, making it easy to forge or resell the same ticket multiple times.
+
+## 🚨 The Problem
+
+Current ticketing systems often allow scalpers to buy dozens or even hundreds of tickets using bots or multiple accounts. These tickets are then resold on unofficial marketplaces, sometimes at prices 200–500% higher than the original. This creates two big problems:
+
+   - Unfair access: Real fans often miss out or are forced to pay exorbitant prices.
+
+   - Fraud and uncertainty: Buyers risk purchasing invalid or duplicated tickets.
+
+## ✅ The Solution
+
+Redmoo Ticket Platform introduces multiple safeguards and innovations:
+
+   - Purchase Limits per Person: Each user can buy up to 4 tickets per event in total, regardless of how many transactions they attempt, stopping scalpers from bypassing limits.
+
+   - SUI Wallet Integration: Each ticket is linked to the buyer’s unique SUI wallet address, which serves as proof of ownership. At event entry, staff can verify that the person presenting the ticket is the original purchaser.
+
+   - Controlled Resale: If a buyer can no longer attend, they may resell their ticket one time only on our platform. The resale price is capped at 10% above the original price to keep tickets affordable.
+
+   - Secure Transfers: When a resale payment is successful, the ticket is automatically and instantly transferred to the new owner’s SUI wallet. This eliminates fraud and guarantees the authenticity of every resale.
+
+
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/pages/api-reference/create-next-app).
 
-## Getting Started
+## How to run this project
 
 First, run the development server:
 
@@ -24,17 +73,12 @@ The `pages/api` directory is mapped to `/api/*`. Files in this directory are tre
 
 This project uses [`next/font`](https://nextjs.org/docs/pages/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-## Learn More
+## 👥 Our Teams
 
-To learn more about Next.js, take a look at the following resources:
+- Chia Jing yuen
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn-pages-router) - an interactive Next.js tutorial.
+- Lee Zi Qinn
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- Low Wen Kai
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/pages/building-your-application/deploying) for more details.
+- Te Yuen Bing
