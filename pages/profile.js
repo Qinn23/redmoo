@@ -2,6 +2,7 @@ import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { useSuiWallet, contractUtils } from "../wallet/useWallet";
 import { Chonburi, Domine } from "next/font/google";
+import QRCode from 'react-qr-code';
 
 const chonburi = Chonburi({
   variable: "--font-chonburi",
@@ -16,7 +17,7 @@ const domine = Domine({
 });
 
 // NFT Ticket Card Component
-function TicketCard({ ticket }) {
+function TicketCard({ ticket, onViewDetails }) {
   const formatDate = (timestamp) => {
     return new Date(parseInt(timestamp)).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -86,8 +87,14 @@ function TicketCard({ ticket }) {
             <p className="text-sm font-medium text-gray-700 font-domine">{formatDate(ticket.purchaseDate)}</p>
           </div>
           <div className="flex space-x-2">
-            <button className="bg-[#D84040] text-white px-3 py-1 rounded text-sm font-domine hover:bg-[#A31D1D] transition-colors">
-              View Details
+            <button 
+              onClick={() => onViewDetails(ticket)}
+              className="bg-gradient-to-r from-[#D84040] to-[#A31D1D] text-white px-4 py-2 rounded-lg text-sm font-domine hover:from-[#A31D1D] hover:to-[#8B1919] transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105 flex items-center space-x-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>Check-In</span>
             </button>
           </div>
         </div>
@@ -119,7 +126,160 @@ function TicketSkeleton() {
   );
 }
 
-const sectionContent = (active, handleLogout, handleSwitchAccount, walletInfo, tickets, loadingTickets, requestFaucet, requestingFaucet, showPurchaseSuccess, clearDemoPurchases) => {
+// Generate unique QR code data for ticket
+function generateTicketQRData(ticket) {
+  // Create a unique identifier combining ticket info with random elements
+  const randomId = Math.random().toString(36).substring(2, 15);
+  const timestamp = Date.now();
+  
+  const qrData = {
+    ticketId: ticket.id,
+    eventName: ticket.eventName,
+    venue: ticket.venue,
+    seat: ticket.seatId,
+    eventDate: ticket.eventDate,
+    randomId: randomId,
+    generatedAt: timestamp,
+    verification: `REDMOO-${randomId.toUpperCase()}-${timestamp.toString(36).toUpperCase()}`
+  };
+  
+  return JSON.stringify(qrData);
+}
+
+// Ticket Details Modal Component
+function TicketDetailsModal({ ticket, isOpen, onClose }) {
+  if (!isOpen || !ticket) return null;
+
+  const formatDate = (timestamp) => {
+    return new Date(parseInt(timestamp)).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  };
+
+  const formatTime = (timestamp) => {
+    return new Date(parseInt(timestamp)).toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  const qrCodeData = generateTicketQRData(ticket);
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-[#D84040] to-[#A31D1D] p-6 text-white">
+          <div className="flex justify-between items-start">
+            <div>
+              <h2 className="text-2xl font-bold font-chonburi">{ticket.eventName}</h2>
+              <p className="text-sm opacity-90 font-domine mt-1">🎫 NFT TICKET DETAILS</p>
+            </div>
+            <button
+              onClick={onClose}
+              className="text-white hover:text-gray-200 transition-colors"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="p-6">
+          {/* QR Code Section */}
+          <div className="text-center mb-8">
+            <h3 className="text-lg font-bold text-[#A31D1D] font-domine mb-4">Your Ticket QR Code</h3>
+            <div className="bg-white p-4 rounded-lg border-2 border-gray-200 inline-block">
+              <QRCode
+                value={qrCodeData}
+                size={200}
+                style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+                viewBox={`0 0 200 200`}
+              />
+            </div>
+            <p className="text-sm text-gray-600 font-domine mt-2">
+              Present this QR code at the venue for entry
+            </p>
+          </div>
+
+          {/* Ticket Details Grid */}
+          <div className="grid md:grid-cols-2 gap-6 mb-6">
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm text-gray-600 font-domine">Event</p>
+                <p className="font-bold text-[#A31D1D] font-domine text-lg">{ticket.eventName}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600 font-domine">Venue</p>
+                <p className="font-semibold text-[#A31D1D] font-domine">{ticket.venue}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600 font-domine">Seat</p>
+                <p className="font-semibold text-[#A31D1D] font-domine">{ticket.seatId}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600 font-domine">Ticket Type</p>
+                <span className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${
+                  ticket.seatType === 1 
+                    ? 'bg-yellow-400 text-yellow-900 border border-yellow-600' 
+                    : 'bg-blue-500 text-white border border-blue-700'
+                }`}>
+                  {ticket.seatType === 1 ? 'VIP' : 'STANDARD'}
+                </span>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm text-gray-600 font-domine">Event Date</p>
+                <p className="font-semibold text-[#A31D1D] font-domine">{formatDate(ticket.eventDate)}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600 font-domine">Event Time</p>
+                <p className="font-semibold text-[#A31D1D] font-domine">{formatTime(ticket.eventDate)}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600 font-domine">Price Paid</p>
+                <p className="font-semibold text-[#A31D1D] font-domine">{contractUtils.mistToSui(ticket.pricePaid).toFixed(2)} SUI</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600 font-domine">Purchase Date</p>
+                <p className="font-semibold text-[#A31D1D] font-domine">{formatDate(ticket.purchaseDate)}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Additional Info */}
+          <div className="bg-[#F8F2DE] rounded-lg p-4 border border-[#D84040]">
+            <h4 className="font-bold text-[#A31D1D] font-domine mb-2">Important Information</h4>
+            <ul className="text-sm text-[#A31D1D] font-domine space-y-1">
+              <li>• Please arrive at least 30 minutes before the event</li>
+              <li>• Present this QR code at the entrance for verification</li>
+              <li>• This is a blockchain NFT ticket - transferable and tradeable</li>
+              <li>• Keep your QR code secure and don't share it publicly</li>
+            </ul>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex justify-end mt-6">
+            <button
+              onClick={onClose}
+              className="px-6 py-2 bg-[#D84040] text-white rounded hover:bg-[#A31D1D] transition-colors font-domine"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const sectionContent = (active, handleLogout, handleSwitchAccount, walletInfo, tickets, loadingTickets, requestFaucet, requestingFaucet, showPurchaseSuccess, clearDemoPurchases, onViewDetails) => {
   if (active === "mytickets") {
     return (
       <div className="space-y-6">
@@ -152,7 +312,7 @@ const sectionContent = (active, handleLogout, handleSwitchAccount, walletInfo, t
         ) : tickets.length > 0 ? (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {tickets.map((ticket, index) => (
-              <TicketCard key={`${ticket.id}-${index}`} ticket={ticket} />
+              <TicketCard key={`${ticket.id}-${index}`} ticket={ticket} onViewDetails={onViewDetails} />
             ))}
           </div>
         ) : (
@@ -315,6 +475,8 @@ export default function Profile() {
   const [requestingFaucet, setRequestingFaucet] = useState(false);
   const [walletLoading, setWalletLoading] = useState(true);
   const [showPurchaseSuccess, setShowPurchaseSuccess] = useState(false);
+  const [selectedTicket, setSelectedTicket] = useState(null);
+  const [showTicketModal, setShowTicketModal] = useState(false);
 
   const {
     isConnected,
@@ -483,6 +645,16 @@ export default function Profile() {
     router.push("/connect-wallet");
   };
 
+  const handleViewDetails = (ticket) => {
+    setSelectedTicket(ticket);
+    setShowTicketModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowTicketModal(false);
+    setSelectedTicket(null);
+  };
+
   const handleRequestFaucet = async () => {
     setRequestingFaucet(true);
     try {
@@ -599,11 +771,19 @@ export default function Profile() {
               handleRequestFaucet,
               requestingFaucet,
               showPurchaseSuccess,
-              clearDemoPurchases
+              clearDemoPurchases,
+              handleViewDetails
             )}
           </div>
         </div>
       </div>
+      
+      {/* Ticket Details Modal */}
+      <TicketDetailsModal 
+        ticket={selectedTicket}
+        isOpen={showTicketModal}
+        onClose={handleCloseModal}
+      />
     </div>
   );
 }

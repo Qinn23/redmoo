@@ -123,6 +123,113 @@ const sampleEvents = [
   }
 ];
 
+// Success Modal Component
+function PurchaseSuccessModal({ isOpen, onClose, details }) {
+  if (!isOpen || !details) return null;
+
+  const handleRedirect = () => {
+    onClose();
+    // Redirect to profile after 1 second
+    setTimeout(() => {
+      window.location.href = '/profile?purchase=success';
+    }, 1000);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl max-w-md w-full overflow-hidden shadow-2xl transform">
+        {/* Header with celebration */}
+        <div className="bg-gradient-to-r from-green-500 to-emerald-600 p-6 text-white text-center">
+          <div className="text-4xl mb-2">🎉</div>
+          <h2 className="text-2xl font-bold font-chonburi">Purchase Successful!</h2>
+          <p className="text-sm opacity-90 font-domine mt-1">Demo NFT tickets acquired</p>
+        </div>
+
+        {/* Content */}
+        <div className="p-6">
+          {/* Success details */}
+          <div className="space-y-4 mb-6">
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <div>
+                <p className="font-semibold text-gray-800 font-domine">
+                  {details.ticketCount} NFT ticket{details.ticketCount > 1 ? 's' : ''} purchased
+                </p>
+                <p className="text-sm text-gray-600 font-domine">Simulated transaction</p>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </div>
+              <div>
+                <p className="font-semibold text-gray-800 font-domine">
+                  Seat{details.ticketCount > 1 ? 's' : ''}: {details.seats}
+                </p>
+                <p className="text-sm text-gray-600 font-domine">{details.eventName}</p>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
+                <svg className="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                </svg>
+              </div>
+              <div>
+                <p className="font-semibold text-gray-800 font-domine">
+                  Demo amount: {details.total} SUI
+                </p>
+                <p className="text-sm text-gray-600 font-domine">Not charged (simulation)</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Demo Notice */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <h4 className="font-bold text-blue-800 font-domine mb-2 flex items-center">
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Demo Notice
+            </h4>
+            <ul className="text-sm text-blue-700 font-domine space-y-1">
+              <li>• No real payment was processed</li>
+              <li>• Your wallet balance is unchanged</li>
+              <li>• Mock NFT tickets will show in your profile</li>
+              <li>• Real transactions work once smart contract is deployed</li>
+            </ul>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex space-x-3">
+            <button
+              onClick={onClose}
+              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-domine"
+            >
+              Stay Here
+            </button>
+            <button
+              onClick={handleRedirect}
+              className="flex-1 px-4 py-2 bg-gradient-to-r from-[#D84040] to-[#A31D1D] text-white rounded-lg hover:from-[#A31D1D] hover:to-[#8B1919] transition-all duration-300 font-domine"
+            >
+              View My Tickets
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function SeatSelection() {
   const router = useRouter();
   const { id } = router.query;
@@ -146,6 +253,10 @@ export default function SeatSelection() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [transactionStatus, setTransactionStatus] = useState(null);
   const [availableTickets, setAvailableTickets] = useState(0);
+  
+  // Success modal state
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [purchaseDetails, setPurchaseDetails] = useState(null);
   
   // Demo contract addresses (these would be deployed addresses in production)
   // TODO: Replace these with actual deployed contract addresses when smart contract is live
@@ -375,10 +486,11 @@ export default function SeatSelection() {
       const totalSelected = selectedSeats.vip.length + selectedSeats.normal.length;
       const TICKET_LIMIT = 4;
       
-      if (totalSelected >= TICKET_LIMIT) {
-        // Show alert when limit is reached
-        alert(`You can only purchase a maximum of ${TICKET_LIMIT} tickets per wallet address.`);
-        return; // Don't change selection
+          if (totalSelected >= TICKET_LIMIT) {
+      // Show visual feedback when limit is reached
+      setTransactionStatus(`⚠️ Maximum ${TICKET_LIMIT} tickets per wallet address`);
+      setTimeout(() => setTransactionStatus(null), 3000);
+      return; // Don't change selection
       }
       
       // Add seat to selection
@@ -422,13 +534,17 @@ export default function SeatSelection() {
 
   const proceedToCheckout = async () => {
     if (getTotalSelectedSeats() === 0) {
-      alert('Please select at least one seat');
+      setTransactionStatus('⚠️ Please select at least one seat');
+      setTimeout(() => setTransactionStatus(null), 3000);
       return;
     }
 
     if (!isConnected) {
-      alert('Please connect your wallet first');
-      router.push('/connect-wallet');
+      setTransactionStatus('⚠️ Please connect your wallet first');
+      setTimeout(() => {
+        setTransactionStatus(null);
+        router.push('/connect-wallet');
+      }, 2000);
       return;
     }
 
@@ -437,7 +553,8 @@ export default function SeatSelection() {
 
     // Check if user has sufficient balance
     if (!hasSufficientBalance(totalInMist)) {
-      alert(`Insufficient balance. You need ${total.toFixed(2)} SUI but only have ${getFormattedBalance()} SUI`);
+      setTransactionStatus(`💳 Insufficient balance. You need ${total.toFixed(2)} SUI but only have ${getFormattedBalance()} SUI`);
+      setTimeout(() => setTransactionStatus(null), 5000);
       return;
     }
 
@@ -504,24 +621,20 @@ export default function SeatSelection() {
 
       setTransactionStatus('Purchase completed! 🎉');
       
-      // Show success message for demo
+      // Show success modal for demo
       const ticketCount = selectedSeatsList.length;
-      const successMessage = `🎉 Demo Purchase Successful!\n\n` +
-        `✅ ${ticketCount} NFT ticket${ticketCount > 1 ? 's' : ''} purchased (simulated)\n` +
-        `💰 Demo amount: ${total.toFixed(2)} SUI (not charged)\n` +
-        `🎫 Seat${ticketCount > 1 ? 's' : ''}: ${selectedSeatsList.map(s => s.number).join(', ')}\n` +
-        `📍 Event: ${event.name}\n\n` +
-        `🔧 Demo Notice:\n` +
-        `• No real payment was processed\n` +
-        `• Your wallet balance is unchanged\n` +
-        `• Mock NFT tickets will show in your profile\n` +
-        `• You'll be redirected to your profile in 3 seconds\n\n` +
-        `Real transactions will work once the smart contract is deployed`;
-
-      alert(successMessage);
+      const details = {
+        ticketCount: ticketCount,
+        seats: selectedSeatsList.map(s => s.number).join(', '),
+        total: total.toFixed(2),
+        eventName: event.name
+      };
       
-      // Update status to show redirect
-      setTransactionStatus('Redirecting to your profile... 🔄');
+      setPurchaseDetails(details);
+      setShowSuccessModal(true);
+      
+      // Clear processing status
+      setTransactionStatus(null);
       
       console.log('✅ Demo purchase completed successfully!');
       console.log('📊 Summary:', {
@@ -572,19 +685,13 @@ export default function SeatSelection() {
       console.log('💡 Wallet connection status:', isConnected);
       console.log('👤 Current account:', currentAccount?.address);
       
-      setTimeout(() => {
-        console.log('🏠 Redirecting to profile page...');
-        router.push('/profile?purchase=success');
-      }, 3000); // Increased delay to 3 seconds for better UX
+      // Note: Removed automatic redirect - user will choose via modal buttons
 
     } catch (error) {
       console.error('❌ Demo transaction error:', error);
-      setTransactionStatus('Demo transaction failed');
+      setTransactionStatus('❌ Demo purchase failed. Smart contract not yet deployed.');
       
-      const errorMessage = 'Demo purchase failed. This is expected since the smart contract is not yet deployed. ' +
-        'In production, this would be a real blockchain transaction.';
-      
-      alert(errorMessage);
+      setTimeout(() => setTransactionStatus(null), 5000);
     } finally {
       setIsProcessing(false);
       setTimeout(() => setTransactionStatus(null), 3000);
@@ -960,6 +1067,13 @@ export default function SeatSelection() {
           }
         }
       `}</style>
+      
+      {/* Success Modal */}
+      <PurchaseSuccessModal 
+        isOpen={showSuccessModal}
+        onClose={() => setShowSuccessModal(false)}
+        details={purchaseDetails}
+      />
     </div>
   );
 }
