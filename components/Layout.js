@@ -48,7 +48,14 @@ export default function Layout({ children }) {
             </div>
             {/* Navigation + Connect Wallet */}
             <div className="flex items-center space-x-4">
-              <nav className="flex items-center space-x-4">
+              <nav className="flex items-center space-x-2">
+                <button
+                  onClick={() => router.push('/faqs')}
+                  className="text-gray-700 hover:text-[#D84040] font-medium transition-all duration-200 font-domine hover:scale-110 transform px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-[#D84040]"
+                >
+                  FAQs
+                </button>
+                
                 <DropdownMenu.Root>
                   <DropdownMenu.Trigger asChild>
                     <button
@@ -99,7 +106,7 @@ export default function Layout({ children }) {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex-1">{children}</main>
       {/* Footer */}
-      <footer className="bg-gray-800 text-white mt-16 animate-fade-in-up" style={{ animationDelay: '0.8s' }}>
+      <footer className="bg-gray-800 text-white mt-8 animate-fade-in-up" style={{ animationDelay: '0.8s' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="grid md:grid-cols-4 gap-8">
             {/* Company Info */}
