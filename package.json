@@ -6,13 +6,15 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "deploy-contract": "node scripts/deploy.js",
+    "setup": "npm install && npm run deploy-contract"
   },
   "dependencies": {
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "next": "15.4.5",
-    "@mysten/wallet-kit": "^0.7.0",
+    "@mysten/wallet-standard": "^0.12.0",
     "@mysten/sui.js": "^0.49.0"
   },
   "devDependencies": {
