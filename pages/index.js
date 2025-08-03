@@ -41,23 +41,23 @@ export default function Home() {
       date: "2024-11-20",
       venue: "Madison Square Garden",
       price: "$120",
-      image: "https://www.billboard.com/wp-content/uploads/2023/09/ed-sheeran-wiltern-2023-billboard-1548.jpg?v=2" 
+      image: "https://media.cnn.com/api/v1/images/stellar/prod/221003115525-ed-sheeran-file-2021.jpg?c=16x9&q=h_833,w_1480,c_fill" 
     },
     {
       id: 3,
-      name: "NBA Finals Game 7",
-      date: "2024-06-15",
-      venue: "Chase Center",
-      price: "$200",
-      image: "https://i.ytimg.com/vi/pX___DCt-6g/hq720.jpg?sqp=-oaymwEhCK4FEIIDSFryq4qpAxMIARUAAAAAGAElAADIQj0AgKJD&rs=AOn4CLAz22YiPPDDDQc0ADmQ6r-oNyz5iQ" 
+      name: "Jay Chou - Carnival World Tour",
+      date: "2024-08-10",
+      venue: "Bukit Jalil National Stadium",
+      price: "$180",
+      image: "https://r2.myc.my/5adec6968135820189a9717cdfa1bba963415498bdf3c741284342ac1dd5de92"
     },
     {
       id: 4,
-      name: "Comic Con 2024",
-      date: "2024-07-25",
-      venue: "Convention Center",
-      price: "$80",
-      image: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhsyC2agb1zZw6MVnRCLoS4iN6wlNWcfE0WUXFgW-U8IUttGujWsixC4Tw2YRJ9OyV4JxWMnmiBcmf5IfkCnsVqCTps7jkj2KxH0zgk6bDXPOhBj0-ztrQMmXPg8TDAkRTlWvGwXggsaSiDgXpfykA1smOhBOhRa6UeVMO9xKj9gFd13pHIoE5os2xxYfn0/w640-h250/Infinite%20KL2025%20-%20Banner.jpg" 
+      name: "BIGBANG - 2025 World Tour",
+      date: "2025-03-15",
+      venue: "Seoul Olympic Stadium",
+      price: "$220",
+      image: "https://sbsstar.net/newsnet/etv/upload/2025/04/28/30000988627_1280.webp"
     }
   ];
 
@@ -82,7 +82,7 @@ export default function Home() {
             {sampleEvents.map((event, index) => (
               <CarouselItem key={event.id} className="p-0 h-full">
                 <Card className="rounded-none border-none bg-transparent shadow-lg h-full">
-                  <CardContent className="flex p-0 aspect-[21/6] relative h-full w-full overflow-hidden">
+                  <CardContent className="flex p-0 aspect-[21/9] relative h-full w-full overflow-hidden">
                     <img
                       src={event.image}
                       alt={event.name}
@@ -145,17 +145,30 @@ export default function Home() {
             Available Events
           </h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {sampleEvents.map((event, index) => (
+            {(() => {
+              const filteredEvents = sampleEvents
+                .filter(event =>
+                  searchQuery.length === 0 ||
+                  event.name.toLowerCase().startsWith(searchQuery.toLowerCase())
+                );
+              if (filteredEvents.length === 0) {
+                return (
+                  <div className="col-span-full text-center text-gray-500 font-domine text-lg py-8">
+                    No events found.
+                  </div>
+                );
+              }
+              return filteredEvents.map((event, index) => (
               <div 
                 key={event.id} 
                 className="bg-white rounded-lg shadow-md p-6 hover:shadow-xl hover:scale-105 transition-all duration-300 animate-fade-in-up flex flex-col h-full transform hover:-translate-y-1"
-                style={{animationDelay: `${0.3 + index * 0.1}s`}}
+                  style={{ animationDelay: `${0.3 + index * 0.1}s` }}
               >
-                <div className="mb-4 text-center flex-shrink-0">
+                  <div className="aspect-[21/9] w-full mb-4 text-center flex-shrink-0">
                   <img 
                     src={event.image} 
                     alt={event.name}
-                    className="w-full h-32 object-cover rounded-lg shadow-sm"
+                      className="w-full h-full object-cover rounded-lg shadow-sm"
                   />
                 </div>
                 <div className="flex-grow">
@@ -186,7 +199,8 @@ export default function Home() {
                   </button>
                 </div>
               </div>
-            ))}
+              ));
+            })()}
           </div>
         </div>
       )}
