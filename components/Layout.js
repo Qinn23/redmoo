@@ -120,12 +120,10 @@ export default function Layout({ children }) {
             {/* Partners */}
             <div>
               <h3 className="text-lg font-semibold mb-4 font-domine">Our Partners</h3>
-              <ul className="space-y-2 text-gray-300 font-domine">
-                <li>Event Organizers</li>
-                <li>Blockchain Partners</li>
-                <li>Payment Processors</li>
-                <li>Security Providers</li>
-              </ul>
+              <div className="flex items-center space-x-3">
+              <img src="/sui-logo.svg" alt="SUI Blockchain" className="w-6 h-6" />
+                <span className="text-gray-300 font-domine text-lg">SUI Blockchain</span>
+              </div>
             </div>
             {/* About Us */}
             <div>
@@ -134,7 +132,7 @@ export default function Layout({ children }) {
                 <li>Our Mission</li>
                 <li>Team</li>
                 <li>Careers</li>
-                <li>Press</li>
+                <li>Our Media</li>
               </ul>
             </div>
             {/* Contact */}
@@ -144,7 +142,7 @@ export default function Layout({ children }) {
                 <li>Support</li>
                 <li>Sales</li>
                 <li>Partnerships</li>
-                <li>Legal</li>
+                <li>Terms of Service</li>
               </ul>
             </div>
           </div>
