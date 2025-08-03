@@ -64,13 +64,13 @@ export default function Layout({ children }) {
                   >
                     <DropdownMenu.Item
                       className="px-4 py-2 text-gray-700 hover:bg-gray-100 cursor-pointer font-domine"
-                      onSelect={() => { router.push('/buy?type=original'); }}
+                      onSelect={() => { router.push('/original'); }}
                     >
                       Original Tickets
                     </DropdownMenu.Item>
                     <DropdownMenu.Item
                       className="px-4 py-2 text-gray-700 hover:bg-gray-100 cursor-pointer font-domine"
-                      onSelect={() => { router.push('/buy?type=resale'); }}
+                      onSelect={() => { router.push('/resale'); }}
                     >
                       Resale Tickets
                     </DropdownMenu.Item>

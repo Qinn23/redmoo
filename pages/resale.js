@@ -2,8 +2,8 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 
 const sampleResaleEvents = [
-  { id: 3, name: "NBA Finals Game 7", date: "2024-06-15", venue: "Chase Center", price: "$200" },
-  { id: 4, name: "Comic Con 2024", date: "2024-07-25", venue: "Convention Center", price: "$80" },
+  { id: 3, name: "NBA Finals Game 7", date: "2024-06-15", venue: "Chase Center", price: "$200", seller: "0x123...abcd", seat: "Section A, Row 5, Seat 10" },
+  { id: 4, name: "Comic Con 2024", date: "2024-07-25", venue: "Convention Center", price: "$80", seller: "0x456...efgh", seat: "VIP Pass" },
 ];
 
 export default function BuyResale() {
@@ -37,7 +37,7 @@ export default function BuyResale() {
       setShowWalletMessage(true);
       setTimeout(() => setShowWalletMessage(false), 3000);
     } else {
-      router.push(`/event/${event.id}`);
+      router.push(`/detailsOfResalepage/${event.id}`);
     }
   };
 
@@ -71,6 +71,8 @@ export default function BuyResale() {
               <div className="flex-1 text-left">
                 <div className="font-bold text-lg font-domine text-[#A31D1D]">{event.name}</div>
                 <div className="text-gray-700 font-domine">{event.date} &bull; {event.venue}</div>
+                <div className="text-gray-600 font-domine">Seller: {event.seller || 'N/A'}</div>
+                <div className="text-gray-600 font-domine">Seat: {event.seat || 'N/A'}</div>
                 <div className="text-[#D84040] font-bold font-domine">{event.price}</div>
               </div>
               <button 
