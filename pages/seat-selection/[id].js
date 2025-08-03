@@ -142,7 +142,7 @@ function PurchaseSuccessModal({ isOpen, onClose, details }) {
         <div className="bg-gradient-to-r from-green-500 to-emerald-600 p-6 text-white text-center">
           <div className="text-4xl mb-2">🎉</div>
           <h2 className="text-2xl font-bold font-chonburi">Purchase Successful!</h2>
-          <p className="text-sm opacity-90 font-domine mt-1">Demo NFT tickets acquired</p>
+          <p className="text-sm opacity-90 font-domine mt-1">NFT tickets acquired</p>
         </div>
 
         {/* Content */}
@@ -191,22 +191,6 @@ function PurchaseSuccessModal({ isOpen, onClose, details }) {
                 <p className="text-sm text-gray-600 font-domine">Not charged (simulation)</p>
               </div>
             </div>
-          </div>
-
-          {/* Demo Notice */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-            <h4 className="font-bold text-blue-800 font-domine mb-2 flex items-center">
-              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              Demo Notice
-            </h4>
-            <ul className="text-sm text-blue-700 font-domine space-y-1">
-              <li>• No real payment was processed</li>
-              <li>• Your wallet balance is unchanged</li>
-              <li>• Mock NFT tickets will show in your profile</li>
-              <li>• Real transactions work once smart contract is deployed</li>
-            </ul>
           </div>
 
           {/* Action Buttons */}
@@ -327,7 +311,7 @@ export default function SeatSelection() {
   useEffect(() => {
     const handleStorageChange = (e) => {
       if (e.key === 'demo_purchases' || e.type === 'storage') {
-        console.log('🔄 Demo purchases changed, refreshing seats and ticket count...');
+        console.log('🔄 Purchases changed, refreshing seats and ticket count...');
         setSeatRefreshKey(prev => prev + 1);
         // Also update available tickets count
         if (event) {
@@ -611,7 +595,45 @@ export default function SeatSelection() {
       };
       setPurchaseDetails(details);
       setShowSuccessModal(true);
+
       setTransactionStatus(null);
+      // Log purchase summary
+      console.log('✅ Purchase completed successfully!');
+      console.log('📊 Summary:', {
+        tickets: ticketCount,
+        seats: selectedSeatsList.map(s => s.number),
+        totalAmount: total.toFixed(2) + ' SUI',
+        event: event.name
+      });
+      // Save purchase to localStorage for UI demo and seat lock
+      const purchaseData = {
+        id: `purchase-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        eventId: event.id,
+        eventName: event.name,
+        venue: event.venue,
+        eventDate: new Date(event.date).getTime(),
+        seats: selectedSeatsList.map(seat => ({
+          seatId: seat.number,
+          seatType: seat.type === 'vip' ? 1 : 2, // 1 = VIP, 2 = Standard
+          price: seat.price
+        })),
+        totalAmount: total,
+        purchaseDate: Date.now(),
+        walletAddress: currentAccount?.address,
+        transactionStatus: 'completed'
+      };
+      // Add to localStorage
+      const existingPurchases = JSON.parse(localStorage.getItem('demo_purchases') || '[]');
+      existingPurchases.push(purchaseData);
+      localStorage.setItem('demo_purchases', JSON.stringify(existingPurchases));
+      // Trigger storage event for seat refresh
+      window.dispatchEvent(new StorageEvent('storage', {
+        key: 'demo_purchases',
+        oldValue: JSON.stringify(existingPurchases.slice(0, -1)),
+        newValue: JSON.stringify(existingPurchases),
+        url: window.location.href,
+        storageArea: localStorage
+      }));
 
       // Clear selections
       setSelectedSeats({ vip: [], normal: [] });
@@ -971,7 +993,7 @@ export default function SeatSelection() {
                 ? 'Connect Wallet to Continue'
                 : getTotalSelectedSeats() === 0
                 ? 'Select Seats to Continue'
-                : 'Demo Purchase (No Real Transaction)'
+                : 'Purchase'
               }
             </button>
             

@@ -35,15 +35,15 @@ function TicketCard({ ticket, onViewDetails }) {
 
   return (
     <div className="bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200 hover:shadow-xl transition-shadow">
-      <div className="relative h-48 bg-gradient-to-r from-[#D84040] to-[#A31D1D]">
-        <div className="absolute inset-0 bg-black bg-opacity-20"></div>
-        <div className="absolute inset-0 flex items-center justify-center">
+      <div className="relative h-36 bg-gradient-to-r from-[#D84040] to-[#A31D1D]">
+        <div className="absolute inset-0 bg-black bg-opacity-10"></div>
+        <div className="absolute inset-0 flex items-center justify-center px-4 pt-10">
           <div className="text-center text-white">
-            <h3 className="text-xl font-bold font-chonburi mb-1">{ticket.eventName}</h3>
-            <p className="text-sm opacity-90 font-domine">🎫 NFT TICKET 🎫</p>
+            <h3 className="text-xl font-bold font-chonburi mb-1 drop-shadow-lg">{ticket.eventName}</h3>
+            <p className="text-sm opacity-95 font-domine drop-shadow">🎫 NFT TICKET 🎫</p>
           </div>
         </div>
-        <div className={`absolute top-3 right-3 rounded-lg px-3 py-1.5 ${
+        <div className={`absolute top-1 right-1 rounded-lg px-3 py-1.5 shadow-lg ${
           ticket.seatType === 1 
             ? 'bg-yellow-400 border border-yellow-600' 
             : 'bg-blue-500 border border-blue-700'
@@ -62,7 +62,7 @@ function TicketCard({ ticket, onViewDetails }) {
         <div className="grid grid-cols-2 gap-4 mb-4">
           <div>
             <p className="text-sm text-gray-600 font-domine">Venue</p>
-            <p className="font-semibold text-[#A31D1D] font-domine">{ticket.venue}</p>
+            <p className="font-semibold text-[#A31D1D] font-domine h-16 flex items-start">{ticket.venue}</p>
           </div>
           <div>
             <p className="text-sm text-gray-600 font-domine">Seat</p>
@@ -104,7 +104,7 @@ function TicketCard({ ticket, onViewDetails }) {
 function TicketSkeleton() {
   return (
     <div className="bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200 animate-pulse">
-      <div className="h-48 bg-gray-300"></div>
+      <div className="h-32 bg-gray-300"></div>
       <div className="p-6">
         <div className="h-4 bg-gray-300 rounded mb-2"></div>
         <div className="h-4 bg-gray-300 rounded w-3/4 mb-4"></div>
@@ -276,7 +276,7 @@ function TicketDetailsModal({ ticket, isOpen, onClose }) {
   );
 }
 
-const sectionContent = (active, handleLogout, handleSwitchAccount, walletInfo, tickets, loadingTickets, requestFaucet, requestingFaucet, showPurchaseSuccess, clearDemoPurchases, onViewDetails) => {
+const sectionContent = (active, handleLogout, handleSwitchAccount, walletInfo, tickets, loadingTickets, showPurchaseSuccess, clearDemoPurchases, onViewDetails) => {
   if (active === "mytickets") {
     return (
       <div className="space-y-6">
@@ -364,25 +364,6 @@ const sectionContent = (active, handleLogout, handleSwitchAccount, walletInfo, t
               </div>
             </div>
           </div>
-
-          <div className="pt-4 border-t border-gray-200">
-            <button
-              onClick={requestFaucet}
-              disabled={requestingFaucet}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-domine flex items-center disabled:opacity-50"
-            >
-              {requestingFaucet && (
-                <svg className="animate-spin h-4 w-4 mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
-                </svg>
-              )}
-              {requestingFaucet ? 'Requesting...' : 'Request Test SUI (Faucet)'}
-            </button>
-            <p className="text-xs text-gray-500 mt-2 font-domine">
-              Get free test SUI for development and testing purposes
-            </p>
-          </div>
         </div>
       </div>
     );
@@ -438,24 +419,6 @@ const sectionContent = (active, handleLogout, handleSwitchAccount, walletInfo, t
               </svg>
             </div>
           </button>
-
-          <div className="bg-[#F8F2DE] rounded-lg p-6 border border-[#D84040]">
-            <h3 className="font-bold text-[#A31D1D] font-domine mb-4">Frequently Asked Questions</h3>
-            <div className="space-y-3 text-sm text-[#A31D1D] font-domine">
-              <div>
-                <div className="font-semibold mb-1">How do I view my NFT tickets?</div>
-                <div>Your purchased tickets will appear in the "My Tickets" section as NFTs stored in your connected wallet.</div>
-              </div>
-              <div>
-                <div className="font-semibold mb-1">Are tickets transferable?</div>
-                <div>Yes! Since tickets are NFTs, you can transfer them to other wallets or sell them on compatible NFT marketplaces.</div>
-              </div>
-              <div>
-                <div className="font-semibold mb-1">Need help?</div>
-                <div>Contact our support team at <a href="mailto:support@redmoo.com" className="text-[#D84040] underline">support@redmoo.com</a></div>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     );
@@ -469,7 +432,7 @@ export default function Profile() {
   const [active, setActive] = useState("mytickets");
   const [tickets, setTickets] = useState([]);
   const [loadingTickets, setLoadingTickets] = useState(true);
-  const [requestingFaucet, setRequestingFaucet] = useState(false);
+
   const [walletLoading, setWalletLoading] = useState(true);
   const [showPurchaseSuccess, setShowPurchaseSuccess] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState(null);
@@ -482,7 +445,7 @@ export default function Profile() {
     getFormattedBalance,
     disconnect,
     suiClient,
-    requestFaucetFunds
+
   } = useSuiWallet();
 
   // Give wallet state time to initialize before checking connection
@@ -652,16 +615,7 @@ export default function Profile() {
     setSelectedTicket(null);
   };
 
-  const handleRequestFaucet = async () => {
-    setRequestingFaucet(true);
-    try {
-      await requestFaucetFunds();
-    } catch (error) {
-      console.error("Failed to request faucet funds:", error);
-    } finally {
-      setRequestingFaucet(false);
-    }
-  };
+
 
   // Debug function to clear demo purchases
   const clearDemoPurchases = () => {
@@ -765,8 +719,6 @@ export default function Profile() {
               walletInfo,
               tickets,
               loadingTickets,
-              handleRequestFaucet,
-              requestingFaucet,
               showPurchaseSuccess,
               clearDemoPurchases,
               handleViewDetails

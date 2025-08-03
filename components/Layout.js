@@ -34,7 +34,7 @@ export default function Layout({ children }) {
   }, []);
 
   return (
-    <div className={`${chonburi.variable} ${domine.variable} min-h-screen bg-gradient-to-br from-[#F8F2DE] to-[#ECDCBF]`}>
+    <div className={`${chonburi.variable} ${domine.variable} min-h-screen bg-gradient-to-br from-[#F8F2DE] to-[#ECDCBF] flex flex-col`}>
       {/* Header */}
       <header className="bg-white shadow-lg border-b-2 border-[#D84040] animate-fade-in">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -48,7 +48,14 @@ export default function Layout({ children }) {
             </div>
             {/* Navigation + Connect Wallet */}
             <div className="flex items-center space-x-4">
-              <nav className="flex items-center space-x-4">
+              <nav className="flex items-center space-x-2">
+                <button
+                  onClick={() => router.push('/faqs')}
+                  className="text-gray-700 hover:text-[#D84040] font-medium transition-all duration-200 font-domine hover:scale-110 transform px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-[#D84040]"
+                >
+                  FAQs
+                </button>
+                
                 <DropdownMenu.Root>
                   <DropdownMenu.Trigger asChild>
                     <button
@@ -97,9 +104,9 @@ export default function Layout({ children }) {
         </div>
       </header>
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">{children}</main>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex-1">{children}</main>
       {/* Footer */}
-      <footer className="bg-gray-800 text-white mt-16 animate-fade-in-up" style={{ animationDelay: '0.8s' }}>
+      <footer className="bg-gray-800 text-white mt-8 animate-fade-in-up" style={{ animationDelay: '0.8s' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="grid md:grid-cols-4 gap-8">
             {/* Company Info */}
@@ -120,12 +127,10 @@ export default function Layout({ children }) {
             {/* Partners */}
             <div>
               <h3 className="text-lg font-semibold mb-4 font-domine">Our Partners</h3>
-              <ul className="space-y-2 text-gray-300 font-domine">
-                <li>Event Organizers</li>
-                <li>Blockchain Partners</li>
-                <li>Payment Processors</li>
-                <li>Security Providers</li>
-              </ul>
+              <div className="flex items-center space-x-3">
+              <img src="/sui-logo.svg" alt="SUI Blockchain" className="w-6 h-6" />
+                <span className="text-gray-300 font-domine text-lg">SUI Blockchain</span>
+              </div>
             </div>
             {/* About Us */}
             <div>
@@ -134,7 +139,7 @@ export default function Layout({ children }) {
                 <li>Our Mission</li>
                 <li>Team</li>
                 <li>Careers</li>
-                <li>Press</li>
+                <li>Our Media</li>
               </ul>
             </div>
             {/* Contact */}
@@ -144,7 +149,7 @@ export default function Layout({ children }) {
                 <li>Support</li>
                 <li>Sales</li>
                 <li>Partnerships</li>
-                <li>Legal</li>
+                <li>Terms of Service</li>
               </ul>
             </div>
           </div>
