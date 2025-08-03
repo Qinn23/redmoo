@@ -84,12 +84,18 @@ export default function Home() {
                       src={event.image}
                       alt={event.name}
                       className="object-cover w-full h-full"
-                      style={{ aspectRatio: '21/6' }}
+                      style={{ aspectRatio: '21/6', objectPosition: 'center 30%' }}
                     />
-                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-6 z-10">
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent pl-12 pr-6 pb-6 pt-6 z-10">
                       <h2 className="text-2xl md:text-3xl font-bold text-white font-chonburi mb-2">{event.name}</h2>
                       <div className="text-gray-200 font-domine mb-1">{event.date} &bull; {event.venue}</div>
                       <div className="text-[#FFD700] font-bold font-domine text-lg">{event.price}</div>
+                      <button
+                        onClick={() => router.push(`/event/${event.id}`)}
+                        className="absolute bottom-6 right-6 bg-[#D84040] text-white px-6 py-2 rounded-full hover:bg-[#A31D1D] font-domine font-medium transition-all shadow-lg z-20"
+                      >
+                        View Details
+                      </button>
                     </div>
                   </CardContent>
                 </Card>
