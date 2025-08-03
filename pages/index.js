@@ -3,6 +3,9 @@ import { useRouter } from "next/router";
 import { Chonburi, Domine } from "next/font/google";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Card, CardContent } from "@/components/ui/card";
+import { BlurFade } from "@/components/magicui/blur-fade";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { AuroraText } from "@/components/magicui/aurora-text";
 
 const chonburi = Chonburi({
   variable: "--font-chonburi",
@@ -38,23 +41,23 @@ export default function Home() {
       date: "2024-11-20",
       venue: "Madison Square Garden",
       price: "$120",
-      image: "https://www.billboard.com/wp-content/uploads/2023/09/ed-sheeran-wiltern-2023-billboard-1548.jpg?v=2" 
+      image: "https://media.cnn.com/api/v1/images/stellar/prod/221003115525-ed-sheeran-file-2021.jpg?c=16x9&q=h_833,w_1480,c_fill" 
     },
     {
       id: 3,
-      name: "NBA Finals Game 7",
-      date: "2024-06-15",
-      venue: "Chase Center",
-      price: "$200",
-      image: "https://i.ytimg.com/vi/pX___DCt-6g/hq720.jpg?sqp=-oaymwEhCK4FEIIDSFryq4qpAxMIARUAAAAAGAElAADIQj0AgKJD&rs=AOn4CLAz22YiPPDDDQc0ADmQ6r-oNyz5iQ" 
+      name: "Jay Chou - Carnival World Tour",
+      date: "2024-08-10",
+      venue: "Bukit Jalil National Stadium",
+      price: "$180",
+      image: "https://r2.myc.my/5adec6968135820189a9717cdfa1bba963415498bdf3c741284342ac1dd5de92"
     },
     {
       id: 4,
-      name: "Comic Con 2024",
-      date: "2024-07-25",
-      venue: "Convention Center",
-      price: "$80",
-      image: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhsyC2agb1zZw6MVnRCLoS4iN6wlNWcfE0WUXFgW-U8IUttGujWsixC4Tw2YRJ9OyV4JxWMnmiBcmf5IfkCnsVqCTps7jkj2KxH0zgk6bDXPOhBj0-ztrQMmXPg8TDAkRTlWvGwXggsaSiDgXpfykA1smOhBOhRa6UeVMO9xKj9gFd13pHIoE5os2xxYfn0/w640-h250/Infinite%20KL2025%20-%20Banner.jpg" 
+      name: "BIGBANG - 2025 World Tour",
+      date: "2025-03-15",
+      venue: "Seoul Olympic Stadium",
+      price: "$220",
+      image: "https://sbsstar.net/newsnet/etv/upload/2025/04/28/30000988627_1280.webp"
     }
   ];
 
@@ -79,7 +82,7 @@ export default function Home() {
             {sampleEvents.map((event, index) => (
               <CarouselItem key={event.id} className="p-0 h-full">
                 <Card className="rounded-none border-none bg-transparent shadow-lg h-full">
-                  <CardContent className="flex p-0 aspect-[21/6] relative h-full w-full overflow-hidden">
+                  <CardContent className="flex p-0 aspect-[21/9] relative h-full w-full overflow-hidden">
                     <img
                       src={event.image}
                       alt={event.name}
@@ -108,12 +111,18 @@ export default function Home() {
       </div>
       {/* Hero Section */}
       <div className="text-center mb-8 animate-fade-in-up">
-        <h1 className="text-5xl md:text-6xl font-bold text-[#A31D1D] mb-6 font-chonburi">
-          Buy your ticket<span className="text-[#D84040]"> Now</span>
-        </h1>
-        <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto font-domine">
+        <section id="header">
+          <BlurFade delay={0.25} inView>
+            <h2 className="text-5xl md:text-6xl font-bold text-[#A31D1D] mb-6 font-chonburi">
+              Buy your ticket <AuroraText colors={["#A31D1D", "#FFE5B4"]}>Now</AuroraText>
+            </h2>
+          </BlurFade>
+          <BlurFade delay={0.5} inView>
+            <span className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto font-domine">
           Buy and sell verified tickets here. No scams, No PDFs, just you and your wallet.
-        </p>
+            </span>
+          </BlurFade>
+        </section>
       </div>
 
       {/* Search Bar - Moved below subtitle */}
@@ -136,17 +145,30 @@ export default function Home() {
             Available Events
           </h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {sampleEvents.map((event, index) => (
+            {(() => {
+              const filteredEvents = sampleEvents
+                .filter(event =>
+                  searchQuery.length === 0 ||
+                  event.name.toLowerCase().startsWith(searchQuery.toLowerCase())
+                );
+              if (filteredEvents.length === 0) {
+                return (
+                  <div className="col-span-full text-center text-gray-500 font-domine text-lg py-8">
+                    No events found.
+                  </div>
+                );
+              }
+              return filteredEvents.map((event, index) => (
               <div 
                 key={event.id} 
                 className="bg-white rounded-lg shadow-md p-6 hover:shadow-xl hover:scale-105 transition-all duration-300 animate-fade-in-up flex flex-col h-full transform hover:-translate-y-1"
-                style={{animationDelay: `${0.3 + index * 0.1}s`}}
+                  style={{ animationDelay: `${0.3 + index * 0.1}s` }}
               >
-                <div className="mb-4 text-center flex-shrink-0">
+                  <div className="aspect-[21/9] w-full mb-4 text-center flex-shrink-0">
                   <img 
                     src={event.image} 
                     alt={event.name}
-                    className="w-full h-32 object-cover rounded-lg shadow-sm"
+                      className="w-full h-full object-cover rounded-lg shadow-sm"
                   />
                 </div>
                 <div className="flex-grow">
@@ -177,42 +199,44 @@ export default function Home() {
                   </button>
                 </div>
               </div>
-            ))}
+              ));
+            })()}
           </div>
         </div>
       )}
 
       {/* Features Section */}
-      <div className="grid md:grid-cols-3 gap-8 mb-16">
-        <div className="bg-white p-6 rounded-lg shadow-md text-center animate-fade-in-up" style={{animationDelay: '0.2s'}}>
-          <div className="w-16 h-16 bg-[#ECDCBF] rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-[#D84040]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <h3 className="text-xl font-semibold text-gray-800 mb-2 font-domine">Secure Transactions</h3>
-          <p className="text-gray-600 font-domine">All transactions are secured with blockchain technology and zkLogin authentication.</p>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg shadow-md text-center animate-fade-in-up" style={{animationDelay: '0.3s'}}>
-          <div className="w-16 h-16 bg-[#ECDCBF] rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-[#D84040]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-            </svg>
-          </div>
-          <h3 className="text-xl font-semibold text-gray-800 mb-2 font-domine">Fair Pricing</h3>
-          <p className="text-gray-600 font-domine">Tickets can only be sold at original prices. No price gouging allowed.</p>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg shadow-md text-center animate-fade-in-up" style={{animationDelay: '0.4s'}}>
-          <div className="w-16 h-16 bg-[#ECDCBF] rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-[#D84040]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-            </svg>
-          </div>
-          <h3 className="text-xl font-semibold text-gray-800 mb-2 font-domine">Gift Tickets</h3>
-          <p className="text-gray-600 font-domine">Send tickets as gifts to friends and family with just a few clicks.</p>
-        </div>
+      <div className="w-full max-w-6xl mx-auto mb-16 animate-fade-in-up" style={{animationDelay: '0.2s'}}>
+        <h2 className="text-3xl font-bold text-left text-[#A31D1D] mb-8 mt-16 font-chonburi">Platform Features</h2>
+        <Accordion type="single" collapsible className="w-full" defaultValue="item-1">
+          <AccordionItem value="item-1">
+            <AccordionTrigger className="scroll-m-20 text-xl font-semibold tracking-tight text-[#A31D1D] hover:text-[#D84040] transition-colors">One Wallet, One Account</AccordionTrigger>
+            <AccordionContent className="flex flex-col gap-4 text-balance">
+              <p className="leading-7 [&:not(:first-child)]:mt-6 text-lg md:text-xl" style={{color: '#423632'}}>Your blockchain wallet is your identity. No more complicated sign-ups or forgotten passwords.</p>
+            </AccordionContent>
+          </AccordionItem>
+          <AccordionItem value="item-2">
+            <AccordionTrigger className="scroll-m-20 text-xl font-semibold tracking-tight text-[#A31D1D] hover:text-[#D84040] transition-colors">Fair Ticket Distribution</AccordionTrigger>
+            <AccordionContent className="flex flex-col gap-4 text-balance">
+              <p className="leading-7 [&:not(:first-child)]:mt-6 text-lg md:text-xl" style={{color: '#423632'}}>Each wallet can purchase up to <b>4 tickets</b> per event, preventing scalping and ensuring fair access for all fans.</p>
+            </AccordionContent>
+          </AccordionItem>
+          <AccordionItem value="item-3">
+            <AccordionTrigger className="scroll-m-20 text-xl font-semibold tracking-tight text-[#A31D1D] hover:text-[#D84040] transition-colors">Resale is Allowed Only on Our Platform</AccordionTrigger>
+            <AccordionContent className="flex flex-col gap-4 text-balance">
+              <p className="leading-7 [&:not(:first-child)]:mt-6 text-lg md:text-xl" style={{color: '#423632'}}>Resell your tickets securely here — tickets can’t be sold outside our marketplace, protecting you from fraud and scams.</p>
+            </AccordionContent>
+          </AccordionItem>
+          <AccordionItem value="item-4">
+            <AccordionTrigger className="scroll-m-20 text-xl font-semibold tracking-tight text-[#A31D1D] hover:text-[#D84040] transition-colors">Resale Rules & Anti-Scalping</AccordionTrigger>
+            <AccordionContent className="flex flex-col gap-4 text-balance">
+              <p className="leading-7 [&:not(:first-child)]:mt-6 text-lg md:text-xl" style={{color: '#423632'}}>
+                All resale tickets on RedMoo can only be sold for a maximum of <b>110% of their original price</b> — no scalper tickets allowed!<br/>
+                Users who attempt to resell tickets more than <b>10 times</b> will be automatically banned from the our website.
+              </p>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
       </div>
 
       {/* How It Works Section */}
@@ -221,23 +245,23 @@ export default function Home() {
         <div className="grid md:grid-cols-4 gap-6">
           <div className="text-center">
             <div className="w-12 h-12 bg-[#D84040] text-white rounded-full flex items-center justify-center mx-auto mb-4 font-bold text-lg font-domine">1</div>
-            <h3 className="font-semibold text-gray-800 mb-2 font-domine">Sign Up</h3>
-            <p className="text-gray-600 text-sm font-domine">Create your account with zkLogin for seamless authentication</p>
+            <h3 className="font-semibold text-gray-800 mb-2 font-domine">Connect Your Wallet</h3>
+            <p className="text-gray-600 text-sm font-domine">Link your Sui blockchain wallet to the platform to authenticate your identity instantly.</p>
           </div>
           <div className="text-center">
             <div className="w-12 h-12 bg-[#D84040] text-white rounded-full flex items-center justify-center mx-auto mb-4 font-bold text-lg font-domine">2</div>
-            <h3 className="font-semibold text-gray-800 mb-2 font-domine">Browse Tickets</h3>
-            <p className="text-gray-600 text-sm font-domine">Find the tickets you want from our secure marketplace</p>
+            <h3 className="font-semibold text-gray-800 mb-2 font-domine">Browse & Select Tickets</h3>
+            <p className="text-gray-600 text-sm font-domine">Explore upcoming concerts, shows, and events. Choose up to 4 tickets per event per wallet and proceed to checkout.</p>
           </div>
           <div className="text-center">
             <div className="w-12 h-12 bg-[#D84040] text-white rounded-full flex items-center justify-center mx-auto mb-4 font-bold text-lg font-domine">3</div>
-            <h3 className="font-semibold text-gray-800 mb-2 font-domine">Purchase</h3>
-            <p className="text-gray-600 text-sm font-domine">Buy tickets with your Sui wallet, up to 4 tickets per wallet</p>
+            <h3 className="font-semibold text-gray-800 mb-2 font-domine">Make Payment</h3>
+            <p className="text-gray-600 text-sm font-domine">Pay securely using SUI tokens. All transactions are recorded on-chain for transparency.</p>
           </div>
           <div className="text-center">
             <div className="w-12 h-12 bg-[#D84040] text-white rounded-full flex items-center justify-center mx-auto mb-4 font-bold text-lg font-domine">4</div>
-            <h3 className="font-semibold text-gray-800 mb-2 font-domine">Enjoy</h3>
-            <p className="text-gray-600 text-sm font-domine">Receive your NFT ticket and enjoy your event!</p>
+            <h3 className="font-semibold text-gray-800 mb-2 font-domine">Receive Tickets</h3>
+            <p className="text-gray-600 text-sm font-domine">Your tickets will be automatically assigned to your wallet address — no PDFs or physical tickets needed. Show your tickets at the event. Enjoy!</p>
           </div>
         </div>
       </div>
