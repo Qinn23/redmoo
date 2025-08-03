@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { Chonburi, Domine } from "next/font/google";
+import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 
 const chonburi = Chonburi({
   variable: "--font-chonburi",
@@ -16,6 +17,7 @@ const domine = Domine({
 export default function Layout({ children }) {
   const router = useRouter();
   const [walletConnected, setWalletConnected] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false); // NEW STATE
 
   useEffect(() => {
     setWalletConnected(typeof window !== 'undefined' && localStorage.getItem('walletConnected') === 'true');
@@ -47,9 +49,33 @@ export default function Layout({ children }) {
             {/* Navigation + Connect Wallet */}
             <div className="flex items-center space-x-4">
               <nav className="flex items-center space-x-4">
-                <button className="text-gray-700 hover:text-[#D84040] font-medium transition-all duration-200 font-domine hover:scale-110 transform" onClick={() => router.push('/buy')}>
-                  Buy Tickets
-                </button>
+                <DropdownMenu.Root>
+                  <DropdownMenu.Trigger asChild>
+                    <button
+                      className="text-gray-700 hover:text-[#D84040] font-medium transition-all duration-200 font-domine hover:scale-110 transform px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-[#D84040]"
+                      type="button"
+                    >
+                      Buy Tickets
+                    </button>
+                  </DropdownMenu.Trigger>
+                  <DropdownMenu.Content
+                    sideOffset={8}
+                    className="bg-white border border-gray-200 rounded shadow-lg py-1 w-44 animate-fade-in z-50"
+                  >
+                    <DropdownMenu.Item
+                      className="px-4 py-2 text-gray-700 hover:bg-gray-100 cursor-pointer font-domine"
+                      onSelect={() => { router.push('/original'); }}
+                    >
+                      Original Tickets
+                    </DropdownMenu.Item>
+                    <DropdownMenu.Item
+                      className="px-4 py-2 text-gray-700 hover:bg-gray-100 cursor-pointer font-domine"
+                      onSelect={() => { router.push('/resale'); }}
+                    >
+                      Resale Tickets
+                    </DropdownMenu.Item>
+                  </DropdownMenu.Content>
+                </DropdownMenu.Root>
               </nav>
               {!walletConnected ? (
                 <button
@@ -71,7 +97,7 @@ export default function Layout({ children }) {
         </div>
       </header>
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">{children}</main>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">{children}</main>
       {/* Footer */}
       <footer className="bg-gray-800 text-white mt-16 animate-fade-in-up" style={{ animationDelay: '0.8s' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">

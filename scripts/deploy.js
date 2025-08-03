@@ -59,7 +59,7 @@ function executeCommand(command, description) {
   }
 }
 
-function checkPrerequisites() {
+async function checkPrerequisites() {
   logStep('1', 'Checking Prerequisites');
   
   // Check if Sui CLI is installed

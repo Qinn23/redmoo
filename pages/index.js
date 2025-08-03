@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useRouter } from "next/router";
 import { Chonburi, Domine } from "next/font/google";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import { Card, CardContent } from "@/components/ui/card";
 
 const chonburi = Chonburi({
   variable: "--font-chonburi",
@@ -18,6 +20,7 @@ export default function Home() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [showEvents, setShowEvents] = useState(false);
+  const [currentEventIndex, setCurrentEventIndex] = useState(0); // NEW STATE
 
   // Sample events data
   const sampleEvents = [
@@ -60,8 +63,49 @@ export default function Home() {
     setShowEvents(e.target.value.length > 0);
   };
 
+  // NEW: Carousel navigation
+  const handleNextEvent = () => {
+    setCurrentEventIndex((prev) => (prev + 1) % sampleEvents.length);
+  };
+
+  const currentEvent = sampleEvents[currentEventIndex];
+
   return (
     <div>
+      {/* Event Showcase Carousel (shadcn/ui style) */}
+      <div className="flex justify-center items-center mb-8 animate-fade-in-up">
+        <Carousel className="w-full max-w-6xl rounded-2xl overflow-hidden">
+          <CarouselContent>
+            {sampleEvents.map((event, index) => (
+              <CarouselItem key={event.id} className="p-0 h-full">
+                <Card className="rounded-none border-none bg-transparent shadow-lg h-full">
+                  <CardContent className="flex p-0 aspect-[21/6] relative h-full w-full overflow-hidden">
+                    <img
+                      src={event.image}
+                      alt={event.name}
+                      className="object-cover w-full h-full"
+                      style={{ aspectRatio: '21/6', objectPosition: 'center 30%' }}
+                    />
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent pl-12 pr-6 pb-6 pt-6 z-10">
+                      <h2 className="text-2xl md:text-3xl font-bold text-white font-chonburi mb-2">{event.name}</h2>
+                      <div className="text-gray-200 font-domine mb-1">{event.date} &bull; {event.venue}</div>
+                      <div className="text-[#FFD700] font-bold font-domine text-lg">{event.price}</div>
+                      <button
+                        onClick={() => router.push(`/event/${event.id}`)}
+                        className="absolute bottom-6 right-6 bg-[#D84040] text-white px-6 py-2 rounded-full hover:bg-[#A31D1D] font-domine font-medium transition-all shadow-lg z-20"
+                      >
+                        View Details
+                      </button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+          <CarouselPrevious className="left-4 top-1/2 -translate-y-1/2 z-20 bg-[#D84040] text-white hover:bg-[#A31D1D]" />
+          <CarouselNext className="right-4 top-1/2 -translate-y-1/2 z-20 bg-[#D84040] text-white hover:bg-[#A31D1D]" />
+        </Carousel>
+      </div>
       {/* Hero Section */}
       <div className="text-center mb-8 animate-fade-in-up">
         <h1 className="text-5xl md:text-6xl font-bold text-[#A31D1D] mb-6 font-chonburi">
