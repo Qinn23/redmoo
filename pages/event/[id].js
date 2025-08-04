@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/router";
 import { Chonburi, Domine } from "next/font/google";
-import { useWallet, ConnectButton } from '@mysten/dapp-kit';
+import { ConnectButton, useCurrentWallet } from '@mysten/dapp-kit';
 import { SuiClient } from '@mysten/sui.js/client';
 
 // Function to add cache-busting parameter to image URLs
@@ -133,7 +133,8 @@ export default function EventDetail() {
     importantNotices: false,
     termsAndConditions: false
   });
-  const { connected, account } = useWallet();
+  const { wallet, currentAccount } = useCurrentWallet();
+  const connected = !!wallet;
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
 
@@ -160,7 +161,7 @@ export default function EventDetail() {
           'test_image_url',
           'test_metadata_url',
         ],
-        signer: account,
+        signer: currentAccount,
       });
 
       console.log('Purchase successful:', tx);
@@ -432,7 +433,7 @@ export default function EventDetail() {
                 {connected && (
                   <div className="mb-4 p-4 bg-gray-100 rounded-lg">
                     <p className="text-sm text-gray-600 font-domine text-center">
-                      Connected: {account.address.slice(0, 6)}...{account.address.slice(-4)}
+                      Connected: {currentAccount?.address.slice(0, 6)}...{currentAccount?.address.slice(-4)}
                     </p>
                   </div>
                 )}

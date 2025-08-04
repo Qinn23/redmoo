@@ -3,7 +3,7 @@ import { useWallet } from '../contexts/WalletContext';
 import { purchaseTicket, getEventDetails } from '../utils/sui-contract';
 
 export function BuyTicketButton({ eventId, seatId, seatType, price }) {
-    const { wallet, connected, connectWallet } = useWallet();
+    const { connected, select: connectWallet } = useWallet();
     const [isProcessing, setIsProcessing] = useState(false);
     const [error, setError] = useState('');
 

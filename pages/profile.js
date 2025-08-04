@@ -1,6 +1,7 @@
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
-import { ConnectButton, useCurrentWallet } from '@mysten/dapp-kit';
+import { ConnectButton } from '@mysten/dapp-kit';
+import { useWallet } from '../contexts/WalletContext';
 import { Chonburi, Domine } from "next/font/google";
 import QRCode from 'react-qr-code';
 
@@ -439,19 +440,17 @@ export default function Profile() {
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [showTicketModal, setShowTicketModal] = useState(false);
 
-  const { wallet: currentWallet } = useCurrentWallet();
-  const isConnected = !!currentWallet;
-  const currentAccount = currentWallet?.account;
+  const { currentAccount, connected: isConnected } = useWallet();
   const [walletBalance, setWalletBalance] = useState('0');
 
   // Fetch balance when wallet is connected
   useEffect(() => {
-    if (currentWallet?.getBalance) {
-      currentWallet.getBalance().then(balance => {
+    if (wallet?.getBalance) {
+      wallet.getBalance().then(balance => {
         setWalletBalance(balance.toString());
       }).catch(console.error);
     }
-  }, [currentWallet]);
+  }, [wallet]);
 
   // Give wallet state time to initialize before checking connection
   useEffect(() => {
@@ -506,18 +505,18 @@ export default function Profile() {
   // Fetch NFT tickets
   useEffect(() => {
     const fetchTickets = async () => {
-      if (!currentAccount || !currentAccount.address) {
-        console.log('⚠️ No current account or address available');
+      if (!address) {
+        console.log('⚠️ No wallet address available');
         setLoadingTickets(false);
         return;
       }
       
       setLoadingTickets(true);
       try {
-        console.log('🎫 Fetching tickets for address:', currentAccount.address);
+        console.log('🎫 Fetching tickets for address:', address);
         
         // Validate that we have a proper address
-        if (!currentAccount.address.startsWith('0x')) {
+        if (!address.startsWith('0x')) {
           throw new Error('Invalid wallet address format');
         }
         
@@ -556,7 +555,7 @@ export default function Profile() {
           
           // Filter purchases for current wallet address
           const userPurchases = demoPurchases.filter(purchase => 
-            purchase.walletAddress === currentAccount.address
+            purchase.walletAddress === address
           );
           
           console.log('👤 Purchases for current wallet:', userPurchases);
@@ -616,7 +615,7 @@ export default function Profile() {
       }
     };
 
-    if (isConnected && currentAccount && suiClient) {
+    if (isConnected && address && suiClient) {
       fetchTickets();
     }
   }, [currentAccount, isConnected, walletBalance]);
@@ -661,7 +660,7 @@ export default function Profile() {
   };
 
   const walletInfo = {
-    address: currentAccount?.address,
+    address: address,
     formattedBalance: getFormattedBalance(),
   };
 

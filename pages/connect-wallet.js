@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/router";
-import { useSuiWallet, contractUtils } from "../wallet/useWallet";
+import { useWallet } from "../contexts/WalletContext";
 
 function Toast({ message, type, onClose }) {
   useEffect(() => {
@@ -18,15 +18,13 @@ export default function ConnectWallet() {
   const router = useRouter();
   const {
     wallets,
-    currentWallet,
-    isConnected,
-    isConnecting,
+    currentAccount,
+    connected: isConnected,
+    select,
     balance,
     error,
-    connect,
-    requestFaucetFunds,
-    getFormattedBalance
-  } = useSuiWallet();
+    requestFaucetFunds
+  } = useWallet();
 
   const [showModal, setShowModal] = useState(false);
   const [selectedWallet, setSelectedWallet] = useState(null);
