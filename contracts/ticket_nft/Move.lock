@@ -2,25 +2,55 @@
 
 [move]
 version = 3
-manifest_digest = "1A2EC5080B1F84BDE29C878BEBC9E82B152FB1F429064851BFE17E889BC6B06F"
-deps_digest = "F8BBB0CCB2491CA29A3DF03D6F92277A4F3574266507ACD77214D37ECA3F3082"
+manifest_digest = "67B29FA426C64707795228B0041AC78C4C4F5F52B7ECB0A72E6E1EDF2996A760"
+deps_digest = "F9B494B64F0615AED0E98FC12A85B85ECD2BC5185C22D30E7F67786BB52E507C"
 dependencies = [
+  { id = "Bridge", name = "Bridge" },
+  { id = "MoveStdlib", name = "MoveStdlib" },
   { id = "Sui", name = "Sui" },
+  { id = "SuiSystem", name = "SuiSystem" },
+]
+
+[[move.package]]
+id = "Bridge"
+source = { git = "https://github.com/MystenLabs/sui.git", rev = "cc6c1eb8b4b542466f8d32fedb9b19c894414b52", subdir = "crates/sui-framework/packages/bridge" }
+
+dependencies = [
+  { id = "MoveStdlib", name = "MoveStdlib" },
+  { id = "Sui", name = "Sui" },
+  { id = "SuiSystem", name = "SuiSystem" },
 ]
 
 [[move.package]]
 id = "MoveStdlib"
-source = { git = "https://github.com/MystenLabs/sui.git", rev = "framework/devnet", subdir = "crates\\sui-framework\\packages\\move-stdlib" }
+source = { git = "https://github.com/MystenLabs/sui.git", rev = "cc6c1eb8b4b542466f8d32fedb9b19c894414b52", subdir = "crates/sui-framework/packages/move-stdlib" }
 
 [[move.package]]
 id = "Sui"
-source = { git = "https://github.com/MystenLabs/sui.git", rev = "framework/devnet", subdir = "crates/sui-framework/packages/sui-framework" }
+source = { git = "https://github.com/MystenLabs/sui.git", rev = "cc6c1eb8b4b542466f8d32fedb9b19c894414b52", subdir = "crates/sui-framework/packages/sui-framework" }
 
 dependencies = [
   { id = "MoveStdlib", name = "MoveStdlib" },
+]
+
+[[move.package]]
+id = "SuiSystem"
+source = { git = "https://github.com/MystenLabs/sui.git", rev = "cc6c1eb8b4b542466f8d32fedb9b19c894414b52", subdir = "crates/sui-framework/packages/sui-system" }
+
+dependencies = [
+  { id = "MoveStdlib", name = "MoveStdlib" },
+  { id = "Sui", name = "Sui" },
 ]
 
 [move.toolchain-version]
 compiler-version = "1.53.0"
 edition = "2024.beta"
 flavor = "sui"
+
+[env]
+
+[env.sui-devnet]
+chain-id = "8a9713ba"
+original-published-id = "0x672e410f0439903559fa15397fb6bc81d63d1a0bd860a21b064be41862e9bb53"
+latest-published-id = "0x672e410f0439903559fa15397fb6bc81d63d1a0bd860a21b064be41862e9bb53"
+published-version = "1"

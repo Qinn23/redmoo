@@ -1,6 +1,6 @@
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
-import { useSuiWallet, contractUtils } from "../wallet/useWallet";
+import { ConnectButton, useCurrentWallet } from '@mysten/dapp-kit';
 import { Chonburi, Domine } from "next/font/google";
 import QRCode from 'react-qr-code';
 
@@ -349,7 +349,7 @@ const sectionContent = (active, handleLogout, handleSwitchAccount, walletInfo, t
               <label className="block text-sm font-semibold text-gray-700 font-domine mb-2">Balance</label>
               <div className="bg-white rounded-lg p-3 border border-gray-200">
                 <span className="text-lg font-bold text-[#D84040] font-domine">
-                  {walletInfo.formattedBalance || '0.00'} SUI
+                  {(parseInt(walletBalance) / 1000000000).toFixed(2)} SUI
                 </span>
               </div>
             </div>
@@ -438,15 +438,19 @@ export default function Profile() {
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [showTicketModal, setShowTicketModal] = useState(false);
 
-  const {
-    isConnected,
-    currentAccount,
-    balance,
-    getFormattedBalance,
-    disconnect,
-    suiClient,
+  const { wallet: currentWallet } = useCurrentWallet();
+  const isConnected = !!currentWallet;
+  const currentAccount = currentWallet?.account;
+  const [walletBalance, setWalletBalance] = useState('0');
 
-  } = useSuiWallet();
+  // Fetch balance when wallet is connected
+  useEffect(() => {
+    if (currentWallet?.getBalance) {
+      currentWallet.getBalance().then(balance => {
+        setWalletBalance(balance.toString());
+      }).catch(console.error);
+    }
+  }, [currentWallet]);
 
   // Give wallet state time to initialize before checking connection
   useEffect(() => {
@@ -470,7 +474,27 @@ export default function Profile() {
     }
   }, [router.query]);
 
-  // Redirect if not connected (but only after wallet has had time to load)
+  if (!walletLoading && !isConnected) {
+    return (
+      <div className="min-h-screen bg-[#FAFAFA] py-8 px-4">
+        <div className="max-w-2xl mx-auto">
+          <div className="bg-white rounded-lg shadow p-8 text-center">
+            <h1 className={`${chonburi.variable} font-chonburi text-2xl mb-4 text-[#D84040]`}>
+              Connect Your Wallet
+            </h1>
+            <p className={`${domine.variable} font-domine text-gray-600 mb-6`}>
+              Please connect your Sui wallet to view your profile and tickets
+            </p>
+            <div className="flex justify-center">
+              <ConnectButton />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Continue with authenticated view
   useEffect(() => {
     if (!walletLoading && !isConnected) {
       console.log('🔄 Wallet not connected, redirecting to connect page...');
@@ -520,7 +544,7 @@ export default function Profile() {
 
         // Read actual purchases from localStorage
         const purchasedTickets = [];
-        const userBalance = parseInt(balance || '0');
+        const userBalance = parseInt(walletBalance || '0');
         
         console.log('💰 User balance:', userBalance, 'MIST');
         
@@ -581,7 +605,7 @@ export default function Profile() {
         console.error("Error details:", {
           message: error.message,
           currentAccount: currentAccount,
-          balance: balance,
+          balance: walletBalance,
           isConnected: isConnected
         });
         // Set empty tickets array on error
@@ -594,7 +618,7 @@ export default function Profile() {
     if (isConnected && currentAccount && suiClient) {
       fetchTickets();
     }
-  }, [currentAccount, isConnected, balance, suiClient]);
+  }, [currentAccount, isConnected, walletBalance]);
 
   const handleLogout = async () => {
     await disconnect();

@@ -1,5 +1,5 @@
-/// Ticket NFT Smart Contract for Event Ticketing Platform
-/// This contract allows minting of ticket NFTs for events with seat information
+
+#[allow(duplicate_alias, unused_use)]
 module ticket_nft::ticket_nft {
     use std::string::{Self, String};
     use sui::coin::{Self, Coin};
@@ -94,7 +94,7 @@ module ticket_nft::ticket_nft {
         let organizer_cap = OrganizerCap {
             id: object::new(ctx),
             organizer: tx_context::sender(ctx),
-        };
+        }
 
         let wallet_tracker = WalletTicketCount {
             id: object::new(ctx),

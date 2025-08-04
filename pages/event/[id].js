@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/router";
 import { Chonburi, Domine } from "next/font/google";
+import { useWallet, ConnectButton } from '@mysten/dapp-kit';
+import { SuiClient } from '@mysten/sui.js/client';
 
 // Function to add cache-busting parameter to image URLs
 const addCacheBuster = (url) => {
@@ -131,6 +133,48 @@ export default function EventDetail() {
     importantNotices: false,
     termsAndConditions: false
   });
+  const { connected, account } = useWallet();
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState('');
+
+  const handlePurchaseTicket = async () => {
+    if (!connected) {
+      setError('Please connect wallet first');
+      return;
+    }
+
+    try {
+      setIsProcessing(true);
+      setError('');
+      
+      const client = new SuiClient({ network: 'devnet' });
+      
+      const tx = await client.executeMoveCall({
+        packageObjectId: '0x672e410f0439903559fa15397fb6bc81d63d1a0bd860a21b064be41862e9bb53',
+        module: 'ticket_nft',
+        function: 'purchase_ticket',
+        arguments: [
+          '0x51093fce63cfb60d284157d9126e6286ab5ac013db114333a52b0190f8003b19',
+          'SEAT_1',
+          1,
+          'test_image_url',
+          'test_metadata_url',
+        ],
+        signer: account,
+      });
+
+      console.log('Purchase successful:', tx);
+      // Update available tickets
+      const available = calculateAvailableTickets();
+      setAvailableTickets(available);
+
+    } catch (err) {
+      console.error('Purchase failed:', err);
+      setError(err.message || 'Failed to purchase ticket');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   useEffect(() => {
     if (id) {
@@ -374,30 +418,41 @@ export default function EventDetail() {
               {/* Right Column - Purchase */}
               <div className="bg-gray-50 rounded-lg p-6 h-fit">
                 <h2 className="text-2xl font-bold text-[#A31D1D] font-chonburi mb-6">Purchase Tickets</h2>
-                {/* Conditional rendering based on event date */}
-                {(() => {
-                  const eventDate = new Date(event.date);
-                  const today = new Date();
-                  // Set both to midnight for date-only comparison
-                  eventDate.setHours(0,0,0,0);
-                  today.setHours(0,0,0,0);
-                  if (eventDate <= today) {
-                    return (
-                      <button 
-                        onClick={() => router.push(`/seat-selection/${event.id}`)}
-                        className="w-full bg-[#D84040] text-white py-4 rounded-full hover:bg-[#A31D1D] transition-colors font-bold text-lg font-domine mt-4"
-                      >
-                        Buy Tickets
-                      </button>
-                    );
-                  } else {
-                    return (
-                      <p className="text-center text-gray-600 font-domine text-base mt-4">
-                        Button will appear here once ready
-                      </p>
-                    );
+                
+                <div className="mb-6">
+                  <ConnectButton className="w-full" />
+                </div>
+
+                {error && (
+                  <div className="mb-4 p-4 bg-red-100 text-red-600 rounded-lg font-domine">
+                    {error}
+                  </div>
+                )}
+
+                {connected && (
+                  <div className="mb-4 p-4 bg-gray-100 rounded-lg">
+                    <p className="text-sm text-gray-600 font-domine text-center">
+                      Connected: {account.address.slice(0, 6)}...{account.address.slice(-4)}
+                    </p>
+                  </div>
+                )}
+
+                <button 
+                  onClick={handlePurchaseTicket}
+                  disabled={isProcessing || !connected}
+                  className={`w-full py-4 rounded-full font-bold text-lg font-domine
+                    ${isProcessing || !connected 
+                      ? 'bg-gray-400 cursor-not-allowed' 
+                      : 'bg-[#D84040] hover:bg-[#A31D1D]'
+                    } text-white transition-colors`}
+                >
+                  {!connected 
+                    ? 'Connect Wallet First' 
+                    : isProcessing 
+                      ? 'Processing...' 
+                      : 'Buy Ticket'
                   }
-                })()}
+                </button>
               </div>
             </div>
           </div>
