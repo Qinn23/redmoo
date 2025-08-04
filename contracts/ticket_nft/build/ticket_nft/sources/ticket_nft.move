@@ -1,13 +1,17 @@
-/// Ticket NFT Smart Contract for Event Ticketing Platform
-/// This contract allows minting of ticket NFTs for events with seat information
+
+#[allow(duplicate_alias, unused_use)]
 module ticket_nft::ticket_nft {
     use std::string::{Self, String};
+    use std::vector;
+    use sui::object::{Self, ID, UID};
+    use sui::transfer;
+    use sui::tx_context::{Self, TxContext};
+    use sui::event;
     use sui::coin::{Self, Coin};
     use sui::sui::SUI;
     use sui::balance::{Self, Balance};
     use sui::table::{Self, Table};
     use sui::clock::{Self, Clock};
-    use sui::event;
 
     // Error codes
     const EInsufficientPayment: u64 = 1;
