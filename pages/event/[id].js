@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/router";
 import { Chonburi, Domine } from "next/font/google";
-import { ConnectButton, useCurrentWallet } from '@mysten/dapp-kit';
+import { ConnectButton } from '@mysten/dapp-kit';
+import { useAppWallet } from "../../contexts/WalletContext";
 import { SuiClient } from '@mysten/sui.js/client';
 
 // Function to add cache-busting parameter to image URLs
@@ -133,8 +134,7 @@ export default function EventDetail() {
     importantNotices: false,
     termsAndConditions: false
   });
-  const { wallet, currentAccount } = useCurrentWallet();
-  const connected = !!wallet;
+  const { connected, currentAccount } = useAppWallet();
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
 

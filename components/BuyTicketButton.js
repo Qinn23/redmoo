@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { useWallet } from '../contexts/WalletContext';
+import { useAppWallet } from '../contexts/WalletContext';
 import { purchaseTicket, getEventDetails } from '../utils/sui-contract';
 
 export function BuyTicketButton({ eventId, seatId, seatType, price }) {
-    const { connected, select: connectWallet } = useWallet();
+        const { connected, connectWallet } = useAppWallet();
     const [isProcessing, setIsProcessing] = useState(false);
     const [error, setError] = useState('');
 

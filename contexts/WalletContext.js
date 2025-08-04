@@ -1,7 +1,8 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { useWallet } from '@mysten/dapp-kit';
+import { useWallet } from '@suiet/wallet-kit';
 import { SuiClient, getFullnodeUrl } from '@mysten/sui.js/client';
 import { TransactionBlock } from '@mysten/sui.js/transactions';
+import '@suiet/wallet-kit/style.css';
 
 // Initialize Sui client for devnet
 export const suiClient = new SuiClient({
@@ -12,27 +13,43 @@ const WalletContext = createContext(null);
 
 export function WalletProvider({ children }) {
   const wallet = useWallet();
-  const [connected, setConnected] = useState(false);
+  const { connected, account: currentAccount, configuredWallets: wallets, connecting, wallet: selectedWallet } = wallet;
   const [address, setAddress] = useState(null);
+  const [availableWallets, setAvailableWallets] = useState([]);
 
   useEffect(() => {
-    if (wallet.connected && wallet.currentAccount) {
-      setConnected(true);
-      setAddress(wallet.currentAccount.address);
+    if (currentAccount?.address) {
+      setAddress(currentAccount.address);
+      console.log('Wallet connected:', {
+        address: currentAccount.address,
+        publicKey: currentAccount.publicKey,
+        wallet: selectedWallet
+      });
       localStorage.setItem('walletConnected', 'true');
     } else {
-      setConnected(false);
       setAddress(null);
       localStorage.removeItem('walletConnected');
     }
-  }, [wallet.connected, wallet.currentAccount]);
+  }, [currentAccount, selectedWallet]);
+
+  useEffect(() => {
+    // Filter to only show installed wallets
+    const installedWallets = wallets?.filter(w => w.installed) || [];
+    setAvailableWallets(installedWallets);
+    
+    if (installedWallets.length > 0) {
+      console.log('Installed wallets:', installedWallets.map(w => ({
+        name: w.name,
+        icon: w.icon,
+        version: w.version,
+        installed: w.installed
+      })));
+    }
+  }, [wallets]);
 
   const connectWallet = async () => {
     try {
-      if (!wallet.chain) {
-        throw new Error('No wallet available');
-      }
-      await wallet.select();
+      await wallet.connect();
       return wallet;
     } catch (error) {
       console.error('Failed to connect wallet:', error);
@@ -43,22 +60,32 @@ export function WalletProvider({ children }) {
 
   const disconnectWallet = async () => {
     try {
-      if (wallet.connected) {
-        await wallet.disconnect();
-        localStorage.removeItem('walletConnected');
-      }
+      await wallet.disconnect();
+      localStorage.removeItem('walletConnected');
     } catch (error) {
       console.error('Failed to disconnect wallet:', error);
     }
   };
 
+  // Auto-connect if previously connected
+  useEffect(() => {
+    const wasConnected = localStorage.getItem('walletConnected') === 'true';
+    if (wasConnected && !connected) {
+      connectWallet().catch(console.error);
+    }
+  }, [connected]);
+
   return (
     <WalletContext.Provider value={{
-      ...wallet,
+      walletContents: availableWallets,
+      currentAccount,
       connected,
+      connecting,
+      selectedWallet,
       address,
       connectWallet,
       disconnectWallet,
+      wallet,
       // Sui client for transactions
       suiClient,
       // Helper for creating transactions
@@ -69,10 +96,10 @@ export function WalletProvider({ children }) {
   );
 }
 
-export const useWallet = () => {
+export const useAppWallet = () => {
   const context = useContext(WalletContext);
   if (!context) {
-    throw new Error('useWallet must be used within a WalletProvider');
+    throw new Error('useAppWallet must be used within a WalletProvider');
   }
   return context;
 };
