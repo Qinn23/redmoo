@@ -94,7 +94,7 @@ module ticket_nft::ticket_nft {
         let organizer_cap = OrganizerCap {
             id: object::new(ctx),
             organizer: tx_context::sender(ctx),
-        };
+        }
 
         let wallet_tracker = WalletTicketCount {
             id: object::new(ctx),
