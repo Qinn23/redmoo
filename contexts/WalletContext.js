@@ -1,33 +1,39 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { ConnectButton, useWallet as useDappKit } from '@mysten/dapp-kit';
+import { useWallet } from '@mysten/dapp-kit';
+import { SuiClient, getFullnodeUrl } from '@mysten/sui.js/client';
+import { TransactionBlock } from '@mysten/sui.js/transactions';
+
+// Initialize Sui client for devnet
+export const suiClient = new SuiClient({
+  url: getFullnodeUrl('devnet'),
+});
 
 const WalletContext = createContext(null);
 
 export function WalletProvider({ children }) {
-  const [wallet, setWallet] = useState(null);
+  const wallet = useWallet();
   const [connected, setConnected] = useState(false);
   const [address, setAddress] = useState(null);
 
   useEffect(() => {
-    // Check if wallet was previously connected
-    const wasConnected = localStorage.getItem('walletConnected') === 'true';
-    if (wasConnected) {
-      connectWallet();
+    if (wallet.connected && wallet.currentAccount) {
+      setConnected(true);
+      setAddress(wallet.currentAccount.address);
+      localStorage.setItem('walletConnected', 'true');
+    } else {
+      setConnected(false);
+      setAddress(null);
+      localStorage.removeItem('walletConnected');
     }
-  }, []);
+  }, [wallet.connected, wallet.currentAccount]);
 
   const connectWallet = async () => {
     try {
-      const walletAdapter = new SuiWalletAdapter();
-      await walletAdapter.connect();
-      
-      setWallet(walletAdapter);
-      setConnected(true);
-      setAddress(walletAdapter.address);
-      
-      localStorage.setItem('walletConnected', 'true');
-      
-      return walletAdapter;
+      if (!wallet.chain) {
+        throw new Error('No wallet available');
+      }
+      await wallet.select();
+      return wallet;
     } catch (error) {
       console.error('Failed to connect wallet:', error);
       localStorage.removeItem('walletConnected');
@@ -36,26 +42,27 @@ export function WalletProvider({ children }) {
   };
 
   const disconnectWallet = async () => {
-    if (wallet) {
-      try {
+    try {
+      if (wallet.connected) {
         await wallet.disconnect();
-        setWallet(null);
-        setConnected(false);
-        setAddress(null);
         localStorage.removeItem('walletConnected');
-      } catch (error) {
-        console.error('Failed to disconnect wallet:', error);
       }
+    } catch (error) {
+      console.error('Failed to disconnect wallet:', error);
     }
   };
 
   return (
     <WalletContext.Provider value={{
-      wallet,
+      ...wallet,
       connected,
       address,
       connectWallet,
-      disconnectWallet
+      disconnectWallet,
+      // Sui client for transactions
+      suiClient,
+      // Helper for creating transactions
+      createTx: () => new TransactionBlock(),
     }}>
       {children}
     </WalletContext.Provider>
