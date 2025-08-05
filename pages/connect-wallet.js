@@ -164,7 +164,7 @@ export default function ConnectWallet() {
                     2. Check if the extension is enabled<br />
                     3. Click the extension icon to ensure it's set up<br /><br />
                     Or install a wallet:<br />
-                    <a href="https://chrome.google.com/webstore/detail/sui-wallet/opcgpfmipidbgpenhmajoajpbobppdil" target="_blank" rel="noopener noreferrer" className="text-[#D84040] underline">Sui Wallet Extension</a>
+                    <a href="https://chromewebstore.google.com/detail/khpkpbbcccdmmclmpigdgddabeilkdpd?utm_source=item-share-cb" target="_blank" rel="noopener noreferrer" className="text-[#D84040] underline">Suiet Wallet Extension</a>
                   </div>
                 )}
                 {wallets.map((wallet) => (
