@@ -1,7 +1,7 @@
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { ConnectButton } from '@mysten/dapp-kit';
-import { useWallet } from '../contexts/WalletContext';
+import { useAppWallet } from "../contexts/WalletContext";
 import { Chonburi, Domine } from "next/font/google";
 import QRCode from 'react-qr-code';
 

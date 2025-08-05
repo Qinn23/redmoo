@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/router";
-import { useWallet } from "../contexts/WalletContext";
+import { useAppWallet } from "../contexts/WalletContext";
 
 function Toast({ message, type, onClose }) {
   useEffect(() => {
@@ -17,20 +17,21 @@ function Toast({ message, type, onClose }) {
 export default function ConnectWallet() {
   const router = useRouter();
   const {
-    wallets,
+    walletContents: wallets = [],
     currentAccount,
     connected: isConnected,
     select,
-    balance,
+    connectWallet,
     error,
     requestFaucetFunds
-  } = useWallet();
+  } = useAppWallet();
 
   const [showModal, setShowModal] = useState(false);
   const [selectedWallet, setSelectedWallet] = useState(null);
   const [localError, setLocalError] = useState("");
   const [toast, setToast] = useState({ message: "", type: "success" });
   const [requestingFaucet, setRequestingFaucet] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
   const connectBtnRef = useRef();
 
   useEffect(() => {
@@ -63,25 +64,21 @@ export default function ConnectWallet() {
     console.log('🖱️ Connect button clicked, selected wallet:', selectedWallet.name);
 
     try {
-      const success = await connect(selectedWallet);
-      console.log('📊 Connection result:', success);
+      setIsConnecting(true);
+      await select(selectedWallet.name);
+      await connectWallet();
+      console.log('📊 Connection successful');
       
-      if (success) {
-        setShowModal(false);
-        setToast({ message: `Connected to ${selectedWallet.name}`, type: "success" });
-        setTimeout(() => router.replace("/profile"), 500);
-      } else {
-        // If connection failed but no error was thrown
-        const errorMsg = error || "Connection failed - please try again";
-        setLocalError(errorMsg);
-        setToast({ message: errorMsg, type: "error" });
-        console.log('❌ Connection failed silently:', errorMsg);
-      }
+      setShowModal(false);
+      setToast({ message: `Connected to ${selectedWallet.name}`, type: "success" });
+      setTimeout(() => router.replace("/profile"), 500);
     } catch (err) {
       console.error('💥 Connection error caught:', err);
       const errorMsg = "Failed to connect: " + (err?.message || err);
       setLocalError(errorMsg);
       setToast({ message: "Failed to connect", type: "error" });
+    } finally {
+      setIsConnecting(false);
     }
   };
 
@@ -162,8 +159,12 @@ export default function ConnectWallet() {
               <div className="mb-4 flex flex-col items-center">
                 {wallets.length === 0 && (
                   <div className="text-gray-500 mb-2 text-center">
-                    No Sui wallets detected.<br />
-                    <a href="https://suiet.app/" target="_blank" rel="noopener noreferrer" className="text-[#D84040] underline">Install Suiet</a> or <a href="https://wallet.sui.io/" target="_blank" rel="noopener noreferrer" className="text-[#D84040] underline">Sui Wallet</a>
+                    No Sui wallets detected. If you've already installed the wallet:<br />
+                    1. Make sure to refresh the page<br />
+                    2. Check if the extension is enabled<br />
+                    3. Click the extension icon to ensure it's set up<br /><br />
+                    Or install a wallet:<br />
+                    <a href="https://chrome.google.com/webstore/detail/sui-wallet/opcgpfmipidbgpenhmajoajpbobppdil" target="_blank" rel="noopener noreferrer" className="text-[#D84040] underline">Sui Wallet Extension</a>
                   </div>
                 )}
                 {wallets.map((wallet) => (

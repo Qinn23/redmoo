@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/router";
 import { Chonburi, Domine } from "next/font/google";
-import { useWallet } from "../../contexts/WalletContext";
+import { useAppWallet } from "../../contexts/WalletContext";
 
 // Function to add cache-busting parameter to image URLs
 const addCacheBuster = (url) => {
