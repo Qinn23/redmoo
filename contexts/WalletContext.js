@@ -33,24 +33,10 @@ export function WalletProvider({ children }) {
   }, [currentAccount, selectedWallet]);
 
   useEffect(() => {
-    // Debug: log all detected wallets and their properties
-    if (wallets) {
-      console.log('All detected wallets:', wallets.map(w => ({
-        name: w.name,
-        icon: w.icon,
-        version: w.version,
-        installed: w.installed,
-        adapter: w.adapter,
-        accounts: w.accounts
-      })));
-    } else {
-      console.log('No wallets detected (wallets is undefined or null)');
-    }
-
     // Filter to only show installed wallets
     const installedWallets = wallets?.filter(w => w.installed) || [];
     setAvailableWallets(installedWallets);
-
+    
     if (installedWallets.length > 0) {
       console.log('Installed wallets:', installedWallets.map(w => ({
         name: w.name,
@@ -58,8 +44,6 @@ export function WalletProvider({ children }) {
         version: w.version,
         installed: w.installed
       })));
-    } else {
-      console.log('No installed wallets found.');
     }
   }, [wallets]);
 
@@ -102,8 +86,9 @@ export function WalletProvider({ children }) {
       connectWallet,
       disconnectWallet,
       wallet,
+      // Sui client for transactions
       suiClient,
-      select: wallet.select,
+      // Helper for creating transactions
       createTx: () => new TransactionBlock(),
     }}>
       {children}

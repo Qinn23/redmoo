@@ -164,7 +164,7 @@ export default function ConnectWallet() {
                     2. Check if the extension is enabled<br />
                     3. Click the extension icon to ensure it's set up<br /><br />
                     Or install a wallet:<br />
-                    <a href="https://chromewebstore.google.com/detail/khpkpbbcccdmmclmpigdgddabeilkdpd?utm_source=item-share-cb" target="_blank" rel="noopener noreferrer" className="text-[#D84040] underline">Suiet Wallet Extension</a>
+                    <a href="https://chrome.google.com/webstore/detail/sui-wallet/opcgpfmipidbgpenhmajoajpbobppdil" target="_blank" rel="noopener noreferrer" className="text-[#D84040] underline">Sui Wallet Extension</a>
                   </div>
                 )}
                 {wallets.map((wallet) => (
@@ -191,7 +191,7 @@ export default function ConnectWallet() {
               <button
                 className="bg-[#D84040] text-white px-6 py-2 rounded-full hover:bg-[#A31D1D] transition-all duration-200 font-medium font-domine hover:scale-110 transform hover:shadow-lg w-full flex items-center justify-center"
                 onClick={handleConnect}
-                disabled={isConnecting || !selectedWallet?.installed}
+                disabled={!selectedWallet || isConnecting}
                 ref={connectBtnRef}
                 aria-busy={isConnecting}
               >

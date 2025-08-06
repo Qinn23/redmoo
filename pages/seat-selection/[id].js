@@ -543,24 +543,41 @@ export default function SeatSelection() {
     }
 
     setIsProcessing(true);
-    setTransactionStatus('Processing your purchase...');
+    setTransactionStatus('Preparing demo transaction...');
 
     try {
+      console.log('🎫 Starting demo ticket purchase...');
+      console.log('ℹ️ DEMO MODE: This is a simulated purchase. No real blockchain transaction will occur.');
+      console.log('💡 Your wallet balance will NOT be affected during this demo.');
+      
+      // DEMO MODE: Since smart contract isn't deployed, simulate the purchase
       const allSeats = getAllSeats();
       const selectedSeatsList = [
         ...selectedSeats.vip.map(id => allSeats.find(s => s.id === id)).filter(Boolean),
         ...selectedSeats.normal.map(id => allSeats.find(s => s.id === id)).filter(Boolean)
       ];
 
-      // TODO: Replace these with your actual deployed contract addresses
-      const ACTUAL_EVENT_OBJECT_ID = "0x246b4178c8134383d8e08615e5c2cf973716e62dd4d93f8b8ad96d9d59e0e361";
-      const ACTUAL_WALLET_TRACKER_ID = "YOUR_WALLET_TRACKER_ID";
-      const DEPLOYED_PACKAGE_ID = "YOUR_DEPLOYED_PACKAGE_ID";
+      console.log('🎯 Selected seats for purchase:', selectedSeatsList);
+      console.log('💰 Total amount (demo):', total.toFixed(2), 'SUI');
 
+      // Simulate transaction delay
+      setTransactionStatus('Creating NFT tickets...');
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      setTransactionStatus('Minting on blockchain...');
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      setTransactionStatus('Finalizing purchase...');
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // TODO: When smart contract is deployed, replace this demo with real transaction
+      /*
       // Real transaction code for when contract is deployed:
       const purchasePromises = [];
+
       for (const seat of selectedSeatsList) {
         const seatPrice = contractUtils.suiToMist((seat.price * 1.04).toString());
+        
         const transaction = contractUtils.createPurchaseTransaction({
           eventObjectId: ACTUAL_EVENT_OBJECT_ID,
           walletTrackerObjectId: ACTUAL_WALLET_TRACKER_ID,
@@ -572,6 +589,7 @@ export default function SeatSelection() {
           clockObjectId: '0x6', // Sui clock object
           packageId: DEPLOYED_PACKAGE_ID
         });
+
         purchasePromises.push(
           executeTransaction(transaction).then(result => ({
             seat,
@@ -580,12 +598,14 @@ export default function SeatSelection() {
           }))
         );
       }
+
       const results = await Promise.all(purchasePromises);
       const successfulPurchases = results.filter(r => r.success);
+      */
 
       setTransactionStatus('Purchase completed! 🎉');
-
-      // Show success modal
+      
+      // Show success modal for demo
       const ticketCount = selectedSeatsList.length;
       const details = {
         ticketCount: ticketCount,
@@ -593,19 +613,22 @@ export default function SeatSelection() {
         total: total.toFixed(2),
         eventName: event.name
       };
+      
       setPurchaseDetails(details);
       setShowSuccessModal(true);
-
+      
+      // Clear processing status
       setTransactionStatus(null);
-      // Log purchase summary
+      
       console.log('✅ Purchase completed successfully!');
       console.log('📊 Summary:', {
         tickets: ticketCount,
         seats: selectedSeatsList.map(s => s.number),
-        totalAmount: total.toFixed(2) + ' SUI',
+        totalAmount: total.toFixed(2) + ' SUI (demo)',
         event: event.name
       });
-      // Save purchase to localStorage for UI demo and seat lock
+      
+      // Save purchase to localStorage for demo tracking
       const purchaseData = {
         id: `purchase-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         eventId: event.id,
@@ -620,13 +643,17 @@ export default function SeatSelection() {
         totalAmount: total,
         purchaseDate: Date.now(),
         walletAddress: currentAccount?.address,
-        transactionStatus: 'completed'
+        transactionStatus: 'completed_demo'
       };
-      // Add to localStorage
+
+      // Get existing purchases and add new one
       const existingPurchases = JSON.parse(localStorage.getItem('demo_purchases') || '[]');
       existingPurchases.push(purchaseData);
       localStorage.setItem('demo_purchases', JSON.stringify(existingPurchases));
-      // Trigger storage event for seat refresh
+      
+      console.log('💾 Purchase saved to localStorage:', purchaseData);
+      
+      // Trigger storage event to refresh seat availability in other tabs/pages
       window.dispatchEvent(new StorageEvent('storage', {
         key: 'demo_purchases',
         oldValue: JSON.stringify(existingPurchases.slice(0, -1)),
@@ -634,12 +661,20 @@ export default function SeatSelection() {
         url: window.location.href,
         storageArea: localStorage
       }));
-
-      // Clear selections
+      
+      // Clear selections and redirect to profile
       setSelectedSeats({ vip: [], normal: [] });
+      
+      console.log('🔄 Preparing to redirect to profile page...');
+      console.log('💡 Wallet connection status:', isConnected);
+      console.log('👤 Current account:', currentAccount?.address);
+      
+      // Note: Removed automatic redirect - user will choose via modal buttons
+
     } catch (error) {
-      console.error('❌ Transaction error:', error);
-      setTransactionStatus('❌ Purchase failed. Please try again.');
+      console.error('❌ Demo transaction error:', error);
+      setTransactionStatus('❌ Demo purchase failed. Smart contract not yet deployed.');
+      
       setTimeout(() => setTransactionStatus(null), 5000);
     } finally {
       setIsProcessing(false);
