@@ -2,6 +2,9 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/router";
 import { Chonburi, Domine } from "next/font/google";
 import { useWallet } from '@suiet/wallet-kit';
+import { SuiClient } from '@mysten/sui.js/client';
+import { TransactionBlock } from '@mysten/sui.js/transactions';
+import { suiToMist } from '../../utils/contract-interactions';
 
 // Function to add cache-busting parameter to image URLs
 const addCacheBuster = (url) => {
@@ -226,26 +229,46 @@ export default function SeatSelection() {
   // Wallet integration with Suiet wallet-kit
   const wallet = useWallet();
   const { connected, account } = wallet;
-  const { balance } = wallet;
-  
+  // Remove old balance logic
+
   // Derived wallet state
   const isConnected = connected;
   const walletAddress = account?.address;
+
+  // Real SUI balance state
+  const [balance, setBalance] = useState(null);
 
   // Transaction state
   const [isProcessing, setIsProcessing] = useState(false);
   const [transactionStatus, setTransactionStatus] = useState(null);
   const [availableTickets, setAvailableTickets] = useState(0);
-  
+
+  // Fetch SUI balance from blockchain
+  useEffect(() => {
+    async function fetchBalance() {
+      if (account?.address) {
+        // Use devnet endpoint for SuiClient
+        const suiClient = new SuiClient({ url: "https://fullnode.devnet.sui.io" });
+        const coins = await suiClient.getCoins({ owner: account.address });
+        const suiCoins = coins.data.filter(c => c.coinType === "0x2::sui::SUI");
+        const total = suiCoins.reduce((sum, c) => sum + Number(c.balance), 0);
+        setBalance(total);
+      } else {
+        setBalance(null);
+      }
+    }
+    fetchBalance();
+  }, [account?.address]);
+
   // Utility functions for wallet
   const getFormattedBalance = useCallback(() => {
     if (!balance) return '0 SUI';
-    return `${(Number(balance) / 1000000000).toFixed(4)} SUI`;
+    return `${(Number(balance) / 1e9).toFixed(4)} SUI`;
   }, [balance]);
-  
+
   const hasSufficientBalance = useCallback((amount) => {
     if (!balance) return false;
-    return Number(balance) >= Number(amount) * 1000000000; // Convert SUI to MIST
+    return Number(balance) >= Number(amount) * 1e9; // Convert SUI to MIST
   }, [balance]);
   
   // Success modal state
@@ -526,6 +549,7 @@ export default function SeatSelection() {
     return selectedSeats.vip.length + selectedSeats.normal.length;
   };
 
+
   const proceedToCheckout = async () => {
     if (getTotalSelectedSeats() === 0) {
       setTransactionStatus('⚠️ Please select at least one seat');
@@ -543,78 +567,44 @@ export default function SeatSelection() {
     }
 
     const total = calculateTotal() * 1.04; // Include booking fee
-    const totalInMist = contractUtils.suiToMist(total.toString());
+    const totalInMist = suiToMist(total);
 
     // Check if user has sufficient balance
-    if (!hasSufficientBalance(totalInMist)) {
+    if (!hasSufficientBalance(total)) {
       setTransactionStatus(`💳 Insufficient balance. You need ${total.toFixed(2)} SUI but only have ${getFormattedBalance()} SUI`);
       setTimeout(() => setTransactionStatus(null), 5000);
       return;
     }
 
     setIsProcessing(true);
-    setTransactionStatus('Preparing demo transaction...');
+    setTransactionStatus('Preparing transaction...');
 
     try {
-      console.log('🎫 Starting demo ticket purchase...');
-      console.log('ℹ️ DEMO MODE: This is a simulated purchase. No real blockchain transaction will occur.');
-      console.log('💡 Your wallet balance will NOT be affected during this demo.');
-      
-      // DEMO MODE: Since smart contract isn't deployed, simulate the purchase
+      // Real blockchain transaction using Sui wallet
       const allSeats = getAllSeats();
       const selectedSeatsList = [
         ...selectedSeats.vip.map(id => allSeats.find(s => s.id === id)).filter(Boolean),
         ...selectedSeats.normal.map(id => allSeats.find(s => s.id === id)).filter(Boolean)
       ];
 
-      console.log('🎯 Selected seats for purchase:', selectedSeatsList);
-      console.log('💰 Total amount (demo):', total.toFixed(2), 'SUI');
+      // For demo: only mint one NFT for the first selected seat
+      const seat = selectedSeatsList[0];
+      if (!seat) throw new Error('No seat selected');
 
-      // Simulate transaction delay
-      setTransactionStatus('Creating NFT tickets...');
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Build transaction block
+      const tx = new TransactionBlock();
+      // TODO: Replace with your actual packageObjectId and Move call
+      const packageObjectId = DEMO_PACKAGE_ID; // Replace with actual package id
+      tx.moveCall({
+        target: `${packageObjectId}::nft::mint`,
+        arguments: [tx.pure(`Ticket for ${event.name} - ${seat.number}`)],
+      });
 
-      setTransactionStatus('Minting on blockchain...');
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-      setTransactionStatus('Finalizing purchase...');
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // TODO: When smart contract is deployed, replace this demo with real transaction
-      /*
-      // Real transaction code for when contract is deployed:
-      const purchasePromises = [];
-
-      for (const seat of selectedSeatsList) {
-        const seatPrice = contractUtils.suiToMist((seat.price * 1.04).toString());
-        
-        const transaction = contractUtils.createPurchaseTransaction({
-          eventObjectId: ACTUAL_EVENT_OBJECT_ID,
-          walletTrackerObjectId: ACTUAL_WALLET_TRACKER_ID,
-          suiAmount: seatPrice,
-          seatId: seat.number,
-          seatType: seat.type === 'vip' ? 1 : 2,
-          imageUrl: generateTicketImageUrl(event, seat),
-          metadataUrl: generateTicketMetadataUrl(event, seat),
-          clockObjectId: '0x6', // Sui clock object
-          packageId: DEPLOYED_PACKAGE_ID
-        });
-
-        purchasePromises.push(
-          executeTransaction(transaction).then(result => ({
-            seat,
-            result,
-            success: true
-          }))
-        );
-      }
-
-      const results = await Promise.all(purchasePromises);
-      const successfulPurchases = results.filter(r => r.success);
-      */
-
+      setTransactionStatus('Please confirm the transaction in your wallet...');
+      const resData = await wallet.signAndExecuteTransactionBlock({
+        transactionBlock: tx
+      });
       setTransactionStatus('Purchase completed! 🎉');
-      
       // Show success modal for demo
       const ticketCount = selectedSeatsList.length;
       const details = {
@@ -623,68 +613,13 @@ export default function SeatSelection() {
         total: total.toFixed(2),
         eventName: event.name
       };
-      
       setPurchaseDetails(details);
       setShowSuccessModal(true);
-      
-      // Clear processing status
       setTransactionStatus(null);
-      
-      console.log('✅ Purchase completed successfully!');
-      console.log('📊 Summary:', {
-        tickets: ticketCount,
-        seats: selectedSeatsList.map(s => s.number),
-        totalAmount: total.toFixed(2) + ' SUI (demo)',
-        event: event.name
-      });
-      
-      // Save purchase to localStorage for demo tracking
-      const purchaseData = {
-        id: `purchase-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        eventId: event.id,
-        eventName: event.name,
-        venue: event.venue,
-        eventDate: new Date(event.date).getTime(),
-        seats: selectedSeatsList.map(seat => ({
-          seatId: seat.number,
-          seatType: seat.type === 'vip' ? 1 : 2, // 1 = VIP, 2 = Standard
-          price: seat.price
-        })),
-        totalAmount: total,
-        purchaseDate: Date.now(),
-        walletAddress: currentAccount?.address,
-        transactionStatus: 'completed_demo'
-      };
-
-      // Get existing purchases and add new one
-      const existingPurchases = JSON.parse(localStorage.getItem('demo_purchases') || '[]');
-      existingPurchases.push(purchaseData);
-      localStorage.setItem('demo_purchases', JSON.stringify(existingPurchases));
-      
-      console.log('💾 Purchase saved to localStorage:', purchaseData);
-      
-      // Trigger storage event to refresh seat availability in other tabs/pages
-      window.dispatchEvent(new StorageEvent('storage', {
-        key: 'demo_purchases',
-        oldValue: JSON.stringify(existingPurchases.slice(0, -1)),
-        newValue: JSON.stringify(existingPurchases),
-        url: window.location.href,
-        storageArea: localStorage
-      }));
-      
-      // Clear selections and redirect to profile
       setSelectedSeats({ vip: [], normal: [] });
-      
-      console.log('🔄 Preparing to redirect to profile page...');
-      console.log('💡 Wallet connection status:', isConnected);
-      console.log('👤 Current account:', currentAccount?.address);
-      
-      // Note: Removed automatic redirect - user will choose via modal buttons
-
     } catch (error) {
-      console.error('❌ Demo transaction error:', error);
-      setTransactionStatus('❌ Demo purchase failed. Smart contract not yet deployed.');
-      
+      console.error('❌ Transaction error:', error);
+      setTransactionStatus('❌ Purchase failed.');
       setTimeout(() => setTransactionStatus(null), 5000);
     } finally {
       setIsProcessing(false);
@@ -887,7 +822,7 @@ export default function SeatSelection() {
               {isConnected ? (
                 <div className="space-y-1">
                   <p className="text-sm text-gray-600 font-domine">
-                    Address: {contractUtils.formatAddress(currentAccount?.address)}
+                    Address: {walletAddress}
                   </p>
                   <p className="text-sm text-gray-600 font-domine">
                     Balance: {getFormattedBalance()} SUI
