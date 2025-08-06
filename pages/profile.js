@@ -1,8 +1,11 @@
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
-import { ConnectButton, useCurrentAccount, useCurrentWallet } from '@mysten/dapp-kit';
+import { ConnectButton, useWallet, useAccountBalance } from '@suiet/wallet-kit';
 import { Chonburi, Domine } from "next/font/google";
 import QRCode from 'react-qr-code';
+import { SuiClient, getFullnodeUrl } from '@mysten/sui.js/client';
+import { useWalletInfo } from '../wallet/useWallet';
+import * as contractUtils from '../utils/contract-interactions';
 
 const chonburi = Chonburi({
   variable: "--font-chonburi",
@@ -344,13 +347,38 @@ const sectionContent = (active, handleLogout, handleSwitchAccount, walletInfo, t
             </div>
           </div>
           
+          {walletInfo.publicKey && (
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 font-domine mb-2">Public Key</label>
+              <div className="bg-white rounded-lg p-3 border border-gray-200 font-mono text-sm break-all">
+                {walletInfo.publicKey}
+              </div>
+            </div>
+          )}
+          
+          {walletInfo.suinsName && (
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 font-domine mb-2">Sui Name Service</label>
+              <div className="bg-white rounded-lg p-3 border border-gray-200 font-mono text-sm">
+                {walletInfo.suinsName}
+              </div>
+            </div>
+          )}
+          
           <div className="grid md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-semibold text-gray-700 font-domine mb-2">Balance</label>
               <div className="bg-white rounded-lg p-3 border border-gray-200">
-                <span className="text-lg font-bold text-[#D84040] font-domine">
-                  {(parseInt(walletBalance) / 1000000000).toFixed(2)} SUI
-                </span>
+                {balanceLoading ? (
+                  <div className="flex items-center">
+                    <div className="mr-2 inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-[#D84040]"></div>
+                    <span className="text-gray-500">Loading balance...</span>
+                  </div>
+                ) : (
+                  <span className="text-lg font-bold text-[#D84040] font-domine">
+                    {getFormattedBalance()}
+                  </span>
+                )}
               </div>
             </div>
             
@@ -438,19 +466,30 @@ export default function Profile() {
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [showTicketModal, setShowTicketModal] = useState(false);
 
-  const currentAccount = useCurrentAccount();
-  const { wallet } = useCurrentWallet() || {};
-  const isConnected = !!currentAccount;
-  const [walletBalance, setWalletBalance] = useState('0');
-
-  // Fetch balance when wallet is connected
-  useEffect(() => {
-    if (wallet?.getBalance) {
-      wallet.getBalance().then(balance => {
-        setWalletBalance(balance.toString());
-      }).catch(console.error);
+  // Initialize the SuiClient for blockchain interactions
+  const [suiClient] = useState(new SuiClient({ url: getFullnodeUrl('devnet') }));
+  
+  // Use our custom wallet info hook for consistent access
+  const { isConnected, wallet, address, account } = useWalletInfo();
+  
+  // Use the Suiet useAccountBalance hook instead of manually fetching balance
+  const { error: balanceError, loading: balanceLoading, balance: walletBalance } = useAccountBalance();
+  
+  // Function to format the balance for display
+  const getFormattedBalance = () => {
+    if (balanceLoading) return 'Loading...';
+    if (balanceError) return 'Error loading balance';
+    if (!walletBalance) return '0';
+    
+    try {
+      // Convert to SUI (1 SUI = 10^9 MIST)
+      const balanceInSui = Number(walletBalance) / 1000000000;
+      return `${balanceInSui.toFixed(4)} SUI`;
+    } catch (err) {
+      console.error('Error formatting balance:', err);
+      return walletBalance;
     }
-  }, [wallet]);
+  };
 
   // Give wallet state time to initialize before checking connection
   useEffect(() => {
@@ -486,7 +525,7 @@ export default function Profile() {
               Please connect your Sui wallet to view your profile and tickets
             </p>
             <div className="flex justify-center">
-              <ConnectButton />
+              <ConnectButton className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition-colors duration-200" />
             </div>
           </div>
         </div>
@@ -531,9 +570,9 @@ export default function Profile() {
         // TODO: Uncomment this when smart contract is deployed
         /*
         const ownedObjects = await suiClient.getOwnedObjects({
-          owner: currentAccount.address,
+          owner: address,
           filter: {
-            StructType: `${PACKAGE_ID}::ticket_nft::TicketNFT`
+            StructType: `${0x0fc2ca8d04ca3335e241aef5d6895d2c1c41d8eac092efaa4580b092e608b13c}::ticket_nft::TicketNFT`
           },
           options: {
             showContent: true,
@@ -604,9 +643,11 @@ export default function Profile() {
         console.error("❌ Error fetching tickets:", error);
         console.error("Error details:", {
           message: error.message,
-          currentAccount: currentAccount,
+          account: account,
+          address: address,
           balance: walletBalance,
-          isConnected: isConnected
+          isConnected: isConnected,
+          suiClientExists: !!suiClient
         });
         // Set empty tickets array on error
         setTickets([]);
@@ -618,11 +659,15 @@ export default function Profile() {
     if (isConnected && address && suiClient) {
       fetchTickets();
     }
-  }, [currentAccount, isConnected, walletBalance]);
+  }, [account, address, isConnected, walletBalance, suiClient]);
 
   const handleLogout = async () => {
-    await disconnect();
-    router.push("/");
+    try {
+      await wallet.disconnect();
+      router.push("/");
+    } catch (error) {
+      console.error("Disconnect error:", error);
+    }
   };
 
   const handleSwitchAccount = () => {
@@ -659,8 +704,25 @@ export default function Profile() {
     window.location.reload();
   };
 
+  // Add debug function to print account info
+  const printAccountInfo = () => {
+    if (!isConnected) return;
+    console.log('Wallet Address:', account?.address);
+    console.log('Sui Name:', account?.suinsName);
+    console.log('Public Key:', account?.publicKey);
+  };
+
+  // Call once to log wallet info for debugging
+  useEffect(() => {
+    if (isConnected && account) {
+      printAccountInfo();
+    }
+  }, [isConnected, account]);
+  
   const walletInfo = {
     address: address,
+    publicKey: account?.publicKey,
+    suinsName: account?.suinsName,
     formattedBalance: getFormattedBalance(),
   };
 

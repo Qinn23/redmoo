@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/router";
 import { Chonburi, Domine } from "next/font/google";
-import { useCurrentAccount } from '@mysten/dapp-kit';
+import { useWallet } from '@suiet/wallet-kit';
 
 // Function to add cache-busting parameter to image URLs
 const addCacheBuster = (url) => {
@@ -223,20 +223,30 @@ export default function SeatSelection() {
     normal: []
   });
 
-  // Wallet integration
-  const {
-    isConnected,
-    currentAccount,
-    balance,
-    executeTransaction,
-    getFormattedBalance,
-    hasSufficientBalance
-  } = useSuiWallet();
+  // Wallet integration with Suiet wallet-kit
+  const wallet = useWallet();
+  const { connected, account } = wallet;
+  const { balance } = wallet;
+  
+  // Derived wallet state
+  const isConnected = connected;
+  const walletAddress = account?.address;
 
   // Transaction state
   const [isProcessing, setIsProcessing] = useState(false);
   const [transactionStatus, setTransactionStatus] = useState(null);
   const [availableTickets, setAvailableTickets] = useState(0);
+  
+  // Utility functions for wallet
+  const getFormattedBalance = useCallback(() => {
+    if (!balance) return '0 SUI';
+    return `${(Number(balance) / 1000000000).toFixed(4)} SUI`;
+  }, [balance]);
+  
+  const hasSufficientBalance = useCallback((amount) => {
+    if (!balance) return false;
+    return Number(balance) >= Number(amount) * 1000000000; // Convert SUI to MIST
+  }, [balance]);
   
   // Success modal state
   const [showSuccessModal, setShowSuccessModal] = useState(false);

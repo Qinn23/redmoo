@@ -29,6 +29,27 @@ export async function loadContractConfig() {
   }
 }
 
+/**
+ * Convert MIST (smallest SUI unit) to SUI
+ * 1 SUI = 10^9 MIST
+ * @param {string|number} mistAmount Amount in MIST
+ * @return {number} Amount in SUI
+ */
+export function mistToSui(mistAmount) {
+  const amount = typeof mistAmount === 'string' ? BigInt(mistAmount) : mistAmount;
+  return Number(amount) / 1_000_000_000;
+}
+
+/**
+ * Convert SUI to MIST (smallest SUI unit)
+ * 1 SUI = 10^9 MIST
+ * @param {number} suiAmount Amount in SUI
+ * @return {bigint} Amount in MIST
+ */
+export function suiToMist(suiAmount) {
+  return BigInt(Math.floor(suiAmount * 1_000_000_000));
+}
+
 // Get current contract configuration
 export function getContractConfig() {
   return CONTRACT_CONFIG;

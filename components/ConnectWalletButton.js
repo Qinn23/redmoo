@@ -1,21 +1,17 @@
-import { ConnectButton, useCurrentAccount, useCurrentWallet, useDisconnectWallet } from '@mysten/dapp-kit';
+import { ConnectButton, useWallet } from '@suiet/wallet-kit';
 
 export default function ConnectWalletButton() {
-  const currentAccount = useCurrentAccount();
-  const wallet = useCurrentWallet();
-  const { disconnect } = useDisconnectWallet();
+  const wallet = useWallet();
   
-  const connected = !!currentAccount;
-  const address = currentAccount?.address;
+  const connected = wallet.connected;
+  const address = wallet.account?.address;
   
   const handleDetailsClick = () => {
-    if (currentAccount) {
+    if (wallet.connected) {
       console.log('Wallet Details:', {
-        name: wallet?.name || 'Unknown',
-        address: currentAccount.address,
-        publicKey: currentAccount.publicKey,
-        chains: wallet?.chains || [],
-        features: wallet?.features || [],
+        name: wallet.name || 'Unknown',
+        address: wallet.account?.address,
+        publicKey: wallet.account?.publicKey,
         status: connected ? 'connected' : 'disconnected'
       });
     }
@@ -23,7 +19,7 @@ export default function ConnectWalletButton() {
 
   const handleDisconnect = async () => {
     try {
-      await disconnect();
+      await wallet.disconnect();
     } catch (error) {
       console.error('Failed to disconnect:', error);
     }
@@ -32,12 +28,12 @@ export default function ConnectWalletButton() {
   return (
     <div className="flex flex-col gap-4">
       <ConnectButton 
-        className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded"
+        className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition-colors duration-200"
       />
       
       {connected && (
         <div className="flex flex-col gap-2 p-4 border rounded">
-          <p className="font-medium">Connected to: {wallet?.name || 'Unknown Wallet'}</p>
+          <p className="font-medium">Connected to: {wallet.name || 'Unknown Wallet'}</p>
           <p className="text-sm break-all">Address: {address}</p>
           <button
             onClick={handleDetailsClick}

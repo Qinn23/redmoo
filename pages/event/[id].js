@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/router";
 import { Chonburi, Domine } from "next/font/google";
-import { ConnectButton, useCurrentAccount } from '@mysten/dapp-kit';
+import { ConnectButton, useWallet } from '@suiet/wallet-kit';
 import { SuiClient } from '@mysten/sui.js/client';
 
 // Function to add cache-busting parameter to image URLs
@@ -133,8 +133,8 @@ export default function EventDetail() {
     importantNotices: false,
     termsAndConditions: false
   });
-  const currentAccount = useCurrentAccount();
-  const connected = !!currentAccount;
+  const wallet = useWallet();
+  const connected = !!wallet.account;
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
 
@@ -161,7 +161,7 @@ export default function EventDetail() {
           'test_image_url',
           'test_metadata_url',
         ],
-        signer: currentAccount,
+        signer: wallet.account,
       });
 
       console.log('Purchase successful:', tx);
@@ -421,7 +421,7 @@ export default function EventDetail() {
                 <h2 className="text-2xl font-bold text-[#A31D1D] font-chonburi mb-6">Purchase Tickets</h2>
                 
                 <div className="mb-6">
-                  <ConnectButton className="w-full" />
+                  <ConnectButton className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition-colors duration-200" />
                 </div>
 
                 {error && (
@@ -433,7 +433,7 @@ export default function EventDetail() {
                 {connected && (
                   <div className="mb-4 p-4 bg-gray-100 rounded-lg">
                     <p className="text-sm text-gray-600 font-domine text-center">
-                      Connected: {currentAccount?.address.slice(0, 6)}...{currentAccount?.address.slice(-4)}
+                      Connected: {wallet.account?.address.slice(0, 6)}...{wallet.account?.address.slice(-4)}
                     </p>
                   </div>
                 )}

@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import { TransactionBlock } from '@mysten/sui.js/transactions';
-import { ConnectButton, useSignAndExecuteTransaction, useCurrentAccount } from '@mysten/dapp-kit';
+import { ConnectButton, useWallet } from '@suiet/wallet-kit';
 
 export function BuyTicketButton({ eventId, seatId, seatType, price, packageId, moduleId }) {
-    const currentAccount = useCurrentAccount();
-    const connected = !!currentAccount;
-    const signAndExecuteTransaction = useSignAndExecuteTransaction();
+    const wallet = useWallet();
+    const connected = wallet.connected;
     const [isProcessing, setIsProcessing] = useState(false);
     const [error, setError] = useState('');
 
@@ -33,11 +32,9 @@ export function BuyTicketButton({ eventId, seatId, seatType, price, packageId, m
                 ],
             });
 
-            // Sign and execute the transaction using dapp-kit hook
-            const result = await signAndExecuteTransaction({
-                transaction: txb,
-                chain: "sui:devnet",
-                options: { showEvents: true, showEffects: true },
+            // Sign and execute the transaction using Suiet wallet-kit
+            const result = await wallet.signAndExecuteTransaction({
+                transaction: txb
             });
             
             console.log('Purchase successful:', result);
