@@ -429,6 +429,7 @@ const sectionContent = (active, handleLogout, handleSwitchAccount, walletInfo, t
 };
 
 export default function Profile() {
+
   const router = useRouter();
   const [active, setActive] = useState("mytickets");
   const [tickets, setTickets] = useState([]);

@@ -3,7 +3,7 @@ import { useAppWallet } from '../contexts/WalletContext';
 import { purchaseTicket, getEventDetails } from '../utils/sui-contract';
 
 export function BuyTicketButton({ eventId, seatId, seatType, price }) {
-        const { connected, connectWallet } = useAppWallet();
+    const { connected, connectWallet, wallet, walletContents } = useAppWallet();
     const [isProcessing, setIsProcessing] = useState(false);
     const [error, setError] = useState('');
 
@@ -45,22 +45,42 @@ export function BuyTicketButton({ eventId, seatId, seatType, price }) {
                     {error}
                 </div>
             )}
-            <button
-                onClick={handlePurchase}
-                disabled={isProcessing}
-                className={`w-full py-4 rounded-full font-bold 
-                    ${isProcessing 
-                        ? 'bg-gray-400' 
-                        : 'bg-[#D84040] hover:bg-[#A31D1D]'
-                    } text-white`}
-            >
-                {!connected 
-                    ? 'Connect Wallet' 
-                    : isProcessing 
-                        ? 'Processing...' 
-                        : 'Buy Ticket'
-                }
-            </button>
+            {walletContents && walletContents.length === 0 ? (
+                <div className="mb-4">
+                    <div className="text-yellow-700 mb-2">
+                        No Sui wallet detected. If you've already installed the wallet:<br />
+                        1. Make sure to refresh the page<br />
+                        2. Check if the extension is enabled<br />
+                        3. Click the extension icon to ensure it's set up<br /><br />
+                        Or install a wallet: 
+                        <a
+                            href="https://chromewebstore.google.com/detail/khpkpbbcccdmmclmpigdgddabeilkdpd?utm_source=item-share-cb"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[#D84040] underline hover:text-[#A31D1D]"
+                        >
+                            Suiet Wallet Extension
+                        </a>
+                    </div>
+                </div>
+            ) : (
+                <button
+                    onClick={handlePurchase}
+                    disabled={isProcessing}
+                    className={`w-full py-4 rounded-full font-bold 
+                        ${isProcessing 
+                            ? 'bg-gray-400' 
+                            : 'bg-[#D84040] hover:bg-[#A31D1D]'
+                        } text-white`}
+                >
+                    {!connected 
+                        ? 'Connect Wallet' 
+                        : isProcessing 
+                            ? 'Processing...' 
+                            : 'Buy Ticket'
+                    }
+                </button>
+            )}
         </div>
     );
 }
