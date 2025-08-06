@@ -2,10 +2,10 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 
 const sampleEvents = [
-  { id: 1, name: "Taylor Swift - The Eras Tour", date: "2024-12-15", venue: "MetLife Stadium", price: "$150" },
-  { id: 2, name: "Ed Sheeran Live in Concert", date: "2024-11-20", venue: "Madison Square Garden", price: "$120" },
-  { id: 3, name: "NBA Finals Game 7", date: "2024-06-15", venue: "Chase Center", price: "$200" },
-  { id: 4, name: "Comic Con 2024", date: "2024-07-25", venue: "Convention Center", price: "$80" },
+  { id: 1, name: "Taylor Swift - The Eras Tour", date: "2025-11-15", venue: "MetLife Stadium", price: "$25" },
+  { id: 2, name: "Ed Sheeran Live in Concert", date: "2025-12-20", venue: "Madison Square Garden", price: "$20" },
+  { id: 3, name: "Jay Chou - Carnival World Tour", date: "2026-01-10", venue: "Bukit Jalil National Stadium", price: "$30" },
+  { id: 4, name: "BIGBANG - 2025 World Tour", date: "2026-02-15", venue: "Seoul Olympic Stadium", price: "$15" },
 ];
 
 export default function Buy() {
