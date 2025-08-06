@@ -191,7 +191,7 @@ export default function ConnectWallet() {
               <button
                 className="bg-[#D84040] text-white px-6 py-2 rounded-full hover:bg-[#A31D1D] transition-all duration-200 font-medium font-domine hover:scale-110 transform hover:shadow-lg w-full flex items-center justify-center"
                 onClick={handleConnect}
-                disabled={!selectedWallet || isConnecting}
+                disabled={isConnecting || !selectedWallet?.installed}
                 ref={connectBtnRef}
                 aria-busy={isConnecting}
               >

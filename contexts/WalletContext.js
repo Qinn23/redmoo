@@ -86,9 +86,8 @@ export function WalletProvider({ children }) {
       connectWallet,
       disconnectWallet,
       wallet,
-      // Sui client for transactions
       suiClient,
-      // Helper for creating transactions
+      select: wallet.select,
       createTx: () => new TransactionBlock(),
     }}>
       {children}
