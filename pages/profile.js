@@ -1,7 +1,6 @@
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
-import { ConnectButton } from '@mysten/dapp-kit';
-import { useAppWallet } from "../contexts/WalletContext";
+import { ConnectButton, useCurrentAccount, useCurrentWallet } from '@mysten/dapp-kit';
 import { Chonburi, Domine } from "next/font/google";
 import QRCode from 'react-qr-code';
 
@@ -439,7 +438,9 @@ export default function Profile() {
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [showTicketModal, setShowTicketModal] = useState(false);
 
-  const { currentAccount, connected: isConnected } = useWallet();
+  const currentAccount = useCurrentAccount();
+  const { wallet } = useCurrentWallet() || {};
+  const isConnected = !!currentAccount;
   const [walletBalance, setWalletBalance] = useState('0');
 
   // Fetch balance when wallet is connected

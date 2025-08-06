@@ -1,15 +1,17 @@
 import { useState } from 'react';
-import { useAppWallet } from '../contexts/WalletContext';
-import { purchaseTicket, getEventDetails } from '../utils/sui-contract';
+import { TransactionBlock } from '@mysten/sui.js/transactions';
+import { ConnectButton, useSignAndExecuteTransaction, useCurrentAccount } from '@mysten/dapp-kit';
 
-export function BuyTicketButton({ eventId, seatId, seatType, price }) {
-        const { connected, connectWallet } = useAppWallet();
+export function BuyTicketButton({ eventId, seatId, seatType, price, packageId, moduleId }) {
+    const currentAccount = useCurrentAccount();
+    const connected = !!currentAccount;
+    const signAndExecuteTransaction = useSignAndExecuteTransaction();
     const [isProcessing, setIsProcessing] = useState(false);
     const [error, setError] = useState('');
 
     const handlePurchase = async () => {
         if (!connected) {
-            await connectWallet();
+            // We'll use ConnectButton instead of manually connecting
             return;
         }
 
@@ -17,22 +19,35 @@ export function BuyTicketButton({ eventId, seatId, seatType, price }) {
             setIsProcessing(true);
             setError('');
 
-            const purchaseData = {
-                eventId,
-                seatId,
-                seatType, // 1 for VIP, 2 for Normal
-                price
-            };
+            // Create transaction block
+            const txb = new TransactionBlock();
+            
+            // Example for a ticket purchase transaction
+            txb.moveCall({
+                target: `${packageId}::${moduleId}::buy_ticket`,
+                arguments: [
+                    txb.pure(eventId),
+                    txb.pure(seatId),
+                    txb.pure(seatType), // 1 for VIP, 2 for Normal
+                    txb.pure(price)
+                ],
+            });
 
-            const tx = await purchaseTicket(wallet, purchaseData);
-            console.log('Purchase successful:', tx);
+            // Sign and execute the transaction using dapp-kit hook
+            const result = await signAndExecuteTransaction({
+                transaction: txb,
+                chain: "sui:devnet",
+                options: { showEvents: true, showEffects: true },
+            });
+            
+            console.log('Purchase successful:', result);
             
             // Show success message or redirect
             alert('Ticket purchased successfully!');
             
         } catch (error) {
             console.error('Purchase failed:', error);
-            setError(error.message);
+            setError(error.message || String(error));
         } finally {
             setIsProcessing(false);
         }
@@ -45,22 +60,24 @@ export function BuyTicketButton({ eventId, seatId, seatType, price }) {
                     {error}
                 </div>
             )}
-            <button
-                onClick={handlePurchase}
-                disabled={isProcessing}
-                className={`w-full py-4 rounded-full font-bold 
-                    ${isProcessing 
-                        ? 'bg-gray-400' 
-                        : 'bg-[#D84040] hover:bg-[#A31D1D]'
-                    } text-white`}
-            >
-                {!connected 
-                    ? 'Connect Wallet' 
-                    : isProcessing 
-                        ? 'Processing...' 
-                        : 'Buy Ticket'
-                }
-            </button>
+            {!connected ? (
+                <ConnectButton
+                    className="w-full py-4 rounded-full font-bold bg-[#D84040] hover:bg-[#A31D1D] text-white"
+                    connectText="Connect Wallet to Buy"
+                />
+            ) : (
+                <button
+                    onClick={handlePurchase}
+                    disabled={isProcessing}
+                    className={`w-full py-4 rounded-full font-bold 
+                        ${isProcessing 
+                            ? 'bg-gray-400' 
+                            : 'bg-[#D84040] hover:bg-[#A31D1D]'
+                        } text-white`}
+                >
+                    {isProcessing ? 'Processing...' : 'Buy Ticket'}
+                </button>
+            )}
         </div>
     );
 }

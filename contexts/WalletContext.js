@@ -1,8 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { useWallet } from '@suiet/wallet-kit';
+import { useWallets, useCurrentAccount, useSignAndExecuteTransaction } from '@mysten/dapp-kit';
 import { SuiClient, getFullnodeUrl } from '@mysten/sui.js/client';
 import { TransactionBlock } from '@mysten/sui.js/transactions';
-import '@suiet/wallet-kit/style.css';
 
 // Initialize Sui client for devnet
 export const suiClient = new SuiClient({
@@ -12,25 +11,28 @@ export const suiClient = new SuiClient({
 const WalletContext = createContext(null);
 
 export function WalletProvider({ children }) {
-  const wallet = useWallet();
-  const { connected, account: currentAccount, configuredWallets: wallets, connecting, wallet: selectedWallet } = wallet;
+  const wallets = useWallets();
+  const currentAccount = useCurrentAccount();
+  const signAndExecuteTransaction = useSignAndExecuteTransaction();
+  
   const [address, setAddress] = useState(null);
   const [availableWallets, setAvailableWallets] = useState([]);
+  const [connecting, setConnecting] = useState(false);
+  const connected = !!currentAccount;
 
   useEffect(() => {
     if (currentAccount?.address) {
       setAddress(currentAccount.address);
       console.log('Wallet connected:', {
         address: currentAccount.address,
-        publicKey: currentAccount.publicKey,
-        wallet: selectedWallet
+        publicKey: currentAccount.publicKey
       });
       localStorage.setItem('walletConnected', 'true');
     } else {
       setAddress(null);
       localStorage.removeItem('walletConnected');
     }
-  }, [currentAccount, selectedWallet]);
+  }, [currentAccount]);
 
   useEffect(() => {
     // Filter to only show installed wallets
@@ -47,24 +49,35 @@ export function WalletProvider({ children }) {
     }
   }, [wallets]);
 
+  // Note: With the new dapp-kit, connection is handled directly by ConnectButton/ConnectModal
+  // These functions are kept for compatibility with existing code
   const connectWallet = async () => {
     try {
-      await wallet.connect();
-      return wallet;
+      setConnecting(true);
+      console.log('Wallet connection handled by ConnectButton component');
+      return true;
     } catch (error) {
       console.error('Failed to connect wallet:', error);
       localStorage.removeItem('walletConnected');
       throw error;
+    } finally {
+      setConnecting(false);
     }
   };
 
   const disconnectWallet = async () => {
     try {
-      await wallet.disconnect();
+      console.log('Wallet disconnection handled by ConnectButton component');
       localStorage.removeItem('walletConnected');
     } catch (error) {
       console.error('Failed to disconnect wallet:', error);
     }
+  };
+  
+  // No longer needed with new ConnectButton/ConnectModal
+  const select = async (walletName) => {
+    console.log(`Selection of wallet ${walletName} is handled by ConnectButton/ConnectModal component`);
+    return true;
   };
 
   // Auto-connect if previously connected
@@ -81,11 +94,11 @@ export function WalletProvider({ children }) {
       currentAccount,
       connected,
       connecting,
-      selectedWallet,
       address,
       connectWallet,
       disconnectWallet,
-      wallet,
+      select,
+      signAndExecuteTransaction,
       // Sui client for transactions
       suiClient,
       // Helper for creating transactions
@@ -96,10 +109,7 @@ export function WalletProvider({ children }) {
   );
 }
 
-export const useAppWallet = () => {
-  const context = useContext(WalletContext);
-  if (!context) {
-    throw new Error('useAppWallet must be used within a WalletProvider');
-  }
-  return context;
-};
+// - useCurrentAccount() - to get the current connected account
+// - useCurrentWallet() - to get info about the current wallet
+// - useSignAndExecuteTransaction() - for sending transactions
+// - useWallets() - to get a list of available wallets

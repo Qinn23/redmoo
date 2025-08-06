@@ -45,8 +45,16 @@ export function createPurchaseTicketTransaction(params) {
     priceInMist,
     imageUrl,
     metadataUrl,
+    packageId,
+    moduleId = 'ticket_nft',
     clockObjectId = '0x6' // Sui Clock object
   } = params;
+  
+  if (!packageId) {
+    throw new Error('Package ID is required');
+  }
+
+  const txb = new TransactionBlock();
 
   if (!CONTRACT_CONFIG) {
     throw new Error('Contract not initialized. Call loadContractConfig() first.');

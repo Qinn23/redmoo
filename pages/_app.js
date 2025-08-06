@@ -1,32 +1,30 @@
-import "@/styles/globals.css";
-import Layout from "../components/Layout";
-import { WalletProvider as SuietWalletProvider } from '@suiet/wallet-kit';
-import { SuiClientProvider, WalletProvider as DappKitWalletProvider } from '@mysten/dapp-kit';
+import '../styles/globals.css';
+import { WalletProvider, SuiClientProvider } from '@mysten/dapp-kit';
 import { getFullnodeUrl } from '@mysten/sui.js/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { WalletProvider } from '../contexts/WalletContext';
-import '@suiet/wallet-kit/style.css';
+import Layout from '../components/Layout';
 
+// Define full set of networks
 const networks = {
   devnet: getFullnodeUrl('devnet'),
+  testnet: getFullnodeUrl('testnet'),
+  mainnet: getFullnodeUrl('mainnet'),
+  localnet: 'http://127.0.0.1:9000',
 };
 
-// Create a client
+// Create a React Query client
 const queryClient = new QueryClient();
 
 export default function App({ Component, pageProps }) {
+  // Check if the component has a getLayout function
+  const getLayout = Component.getLayout || ((page) => <Layout>{page}</Layout>);
+  
   return (
     <QueryClientProvider client={queryClient}>
       <SuiClientProvider networks={networks} defaultNetwork="devnet">
-        <SuietWalletProvider defaultWallets={["Suiet"]} autoConnect={true}>
-          <DappKitWalletProvider>
-            <WalletProvider>
-              <Layout>
-                <Component {...pageProps} />
-              </Layout>
-            </WalletProvider>
-          </DappKitWalletProvider>
-        </SuietWalletProvider>
+        <WalletProvider>
+          {getLayout(<Component {...pageProps} />)}
+        </WalletProvider>
       </SuiClientProvider>
     </QueryClientProvider>
   );

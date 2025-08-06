@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/router";
 import { Chonburi, Domine } from "next/font/google";
-import { useAppWallet } from "../../contexts/WalletContext";
+import { useCurrentAccount } from '@mysten/dapp-kit';
 
 // Function to add cache-busting parameter to image URLs
 const addCacheBuster = (url) => {

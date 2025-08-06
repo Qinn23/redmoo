@@ -19,7 +19,8 @@ const domine = Domine({
   weight: ["400", "500", "600", "700"],
 });
 
-export default function Home() {
+// Define the Home component as a proper React component
+const Home = () => {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [showEvents, setShowEvents] = useState(false);
@@ -268,3 +269,12 @@ export default function Home() {
     </div>
   );
 }
+
+// Export the Home component
+const Home_Component = Home;
+
+// Do not specify a custom getLayout
+// This will make the page use the default Layout from _app.js
+
+// Export the enhanced component
+export default Home_Component;
