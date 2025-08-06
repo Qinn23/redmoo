@@ -31,33 +31,33 @@ const Home = () => {
     {
       id: 1,
       name: "Taylor Swift - The Eras Tour",
-      date: "2024-12-15",
+      date: "2025-11-15",
       venue: "MetLife Stadium",
-      price: "$150",
+      price: "$25",
       image: "https://media.cnn.com/api/v1/images/stellar/prod/gettyimages-2181107453-20241209114519432.jpg?q=w_3000,c_fill" 
     },
     {
       id: 2,
       name: "Ed Sheeran Live in Concert",
-      date: "2024-11-20",
+      date: "2025-12-20",
       venue: "Madison Square Garden",
-      price: "$120",
+      price: "$20",
       image: "https://media.cnn.com/api/v1/images/stellar/prod/221003115525-ed-sheeran-file-2021.jpg?c=16x9&q=h_833,w_1480,c_fill" 
     },
     {
       id: 3,
       name: "Jay Chou - Carnival World Tour",
-      date: "2024-08-10",
+      date: "2026-01-10",
       venue: "Bukit Jalil National Stadium",
-      price: "$180",
+      price: "$30",
       image: "https://r2.myc.my/5adec6968135820189a9717cdfa1bba963415498bdf3c741284342ac1dd5de92"
     },
     {
       id: 4,
       name: "BIGBANG - 2025 World Tour",
-      date: "2025-03-15",
+      date: "2026-02-15",
       venue: "Seoul Olympic Stadium",
-      price: "$220",
+      price: "$15",
       image: "https://sbsstar.net/newsnet/etv/upload/2025/04/28/30000988627_1280.webp"
     }
   ];

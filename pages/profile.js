@@ -566,15 +566,6 @@ const sectionContent = (active, handleLogout, handleSwitchAccount, walletInfo, t
             </div>
           </div>
           
-          {walletInfo.publicKey && (
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 font-domine mb-2">Public Key</label>
-              <div className="bg-white rounded-lg p-3 border border-gray-200 font-mono text-sm break-all">
-                {walletInfo.publicKey}
-              </div>
-            </div>
-          )}
-          
           {walletInfo.suinsName && (
             <div>
               <label className="block text-sm font-semibold text-gray-700 font-domine mb-2">Sui Name Service</label>
@@ -740,7 +731,7 @@ export default function Profile() {
     try {
       // Convert to SUI (1 SUI = 10^9 MIST)
       const balanceInSui = Number(walletBalance) / 1000000000;
-      return `${balanceInSui.toFixed(4)} SUI`;
+      return `${balanceInSui.toFixed(2)} SUI`;
     } catch (err) {
       console.error('Error formatting balance:', err);
       return walletBalance;
@@ -851,22 +842,6 @@ export default function Profile() {
               });
             });
           });
-          
-          // If no actual purchases exist, show some demo tickets for testing
-          if (purchasedTickets.length === 0 && userBalance >= 0) {
-            console.log('🎪 No purchases found, showing demo tickets for testing');
-            purchasedTickets.push({
-              id: "demo-ticket-fallback",
-              eventName: "Welcome to RedMoo!",
-              venue: "Demo Venue",
-              seatId: "DEMO",
-              seatType: 2, // Standard
-              eventDate: Date.now() + (30 * 24 * 60 * 60 * 1000), // 30 days from now
-              pricePaid: "0", // Free demo ticket
-              purchaseDate: Date.now(),
-              isDemoFallback: true
-            });
-          }
           
         } catch (error) {
           console.error('❌ Error reading purchases from localStorage:', error);
