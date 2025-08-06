@@ -439,20 +439,10 @@ export default function EventDetail() {
                 )}
 
                 <button 
-                  onClick={handlePurchaseTicket}
-                  disabled={isProcessing || !connected}
-                  className={`w-full py-4 rounded-full font-bold text-lg font-domine
-                    ${isProcessing || !connected 
-                      ? 'bg-gray-400 cursor-not-allowed' 
-                      : 'bg-[#D84040] hover:bg-[#A31D1D]'
-                    } text-white transition-colors`}
+                  onClick={() => router.push(`/seat-selection/${event.id}`)}
+                  className={`w-full py-4 rounded-full font-bold text-lg font-domine bg-[#D84040] hover:bg-[#A31D1D] text-white transition-colors`}
                 >
-                  {!connected 
-                    ? 'Connect Wallet First' 
-                    : isProcessing 
-                      ? 'Processing...' 
-                      : 'Buy Ticket'
-                  }
+                  View Seat
                 </button>
               </div>
             </div>
