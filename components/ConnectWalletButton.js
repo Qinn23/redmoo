@@ -6,6 +6,12 @@ export default function ConnectWalletButton() {
   const connected = wallet.connected;
   const address = wallet.account?.address;
   
+  // Helper function to format address to shortform
+  const getShortAddress = (address) => {
+    if (!address) return '';
+    return `${address.slice(0, 6)}...${address.slice(-4)}`;
+  };
+  
   const handleDetailsClick = () => {
     if (wallet.connected) {
       console.log('Wallet Details:', {
@@ -34,7 +40,7 @@ export default function ConnectWalletButton() {
       {connected && (
         <div className="flex flex-col gap-2 p-4 border rounded">
           <p className="font-medium">Connected to: {wallet.name || 'Unknown Wallet'}</p>
-          <p className="text-sm break-all">Address: {address}</p>
+          <p className="text-sm break-all">Address: {getShortAddress(address)}</p>
           <button
             onClick={handleDetailsClick}
             className="px-4 py-2 mt-2 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
