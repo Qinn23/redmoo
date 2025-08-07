@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { Chonburi, Domine } from "next/font/google";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
@@ -19,48 +19,88 @@ const domine = Domine({
   weight: ["400", "500", "600", "700"],
 });
 
+// Sample events data - moved outside component to avoid initialization issues
+const sampleEvents = [
+  {
+    id: 1,
+    name: "Taylor Swift - The Eras Tour",
+    date: "2025-11-15",
+    venue: "MetLife Stadium",
+    price: "$25",
+    image: "https://media.cnn.com/api/v1/images/stellar/prod/gettyimages-2181107453-20241209114519432.jpg?q=w_3000,c_fill" 
+  },
+  {
+    id: 2,
+    name: "Ed Sheeran Live in Concert",
+    date: "2025-12-20",
+    venue: "Madison Square Garden",
+    price: "$20",
+    image: "https://media.cnn.com/api/v1/images/stellar/prod/221003115525-ed-sheeran-file-2021.jpg?c=16x9&q=h_833,w_1480,c_fill" 
+  },
+  {
+    id: 3,
+    name: "Jay Chou - Carnival World Tour",
+    date: "2026-01-10",
+    venue: "Bukit Jalil National Stadium",
+    price: "$30",
+    image: "https://r2.myc.my/5adec6968135820189a9717cdfa1bba963415498bdf3c741284342ac1dd5de92"
+  },
+  {
+    id: 4,
+    name: "BIGBANG - 2025 World Tour",
+    date: "2026-02-15",
+    venue: "Seoul Olympic Stadium",
+    price: "$15",
+    image: "https://sbsstar.net/newsnet/etv/upload/2025/04/28/30000988627_1280.webp"
+  }
+];
+
 // Define the Home component as a proper React component
 const Home = () => {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [showEvents, setShowEvents] = useState(false);
-  const [currentEventIndex, setCurrentEventIndex] = useState(0); // NEW STATE
+  const [currentEventIndex, setCurrentEventIndex] = useState(0);
+  const [allEvents, setAllEvents] = useState(sampleEvents); // Combined events state
 
-  // Sample events data
-  const sampleEvents = [
-    {
-      id: 1,
-      name: "Taylor Swift - The Eras Tour",
-      date: "2025-11-15",
-      venue: "MetLife Stadium",
-      price: "$25",
-      image: "https://media.cnn.com/api/v1/images/stellar/prod/gettyimages-2181107453-20241209114519432.jpg?q=w_3000,c_fill" 
-    },
-    {
-      id: 2,
-      name: "Ed Sheeran Live in Concert",
-      date: "2025-12-20",
-      venue: "Madison Square Garden",
-      price: "$20",
-      image: "https://media.cnn.com/api/v1/images/stellar/prod/221003115525-ed-sheeran-file-2021.jpg?c=16x9&q=h_833,w_1480,c_fill" 
-    },
-    {
-      id: 3,
-      name: "Jay Chou - Carnival World Tour",
-      date: "2026-01-10",
-      venue: "Bukit Jalil National Stadium",
-      price: "$30",
-      image: "https://r2.myc.my/5adec6968135820189a9717cdfa1bba963415498bdf3c741284342ac1dd5de92"
-    },
-    {
-      id: 4,
-      name: "BIGBANG - 2025 World Tour",
-      date: "2026-02-15",
-      venue: "Seoul Olympic Stadium",
-      price: "$15",
-      image: "https://sbsstar.net/newsnet/etv/upload/2025/04/28/30000988627_1280.webp"
+  // Load dynamic events from localStorage and merge with sample events
+  const loadAllEvents = () => {
+    try {
+      const dynamicEvents = JSON.parse(localStorage.getItem('dynamic_events') || '{}');
+      const dynamicEventsList = Object.entries(dynamicEvents).map(([id, eventData]) => ({
+        id: parseInt(id),
+        name: eventData.name,
+        date: new Date(eventData.eventDate).toISOString().split('T')[0],
+        venue: eventData.venue,
+        price: `$${eventData.normalPrice}`,
+        image: eventData.imageUrl || `https://api.placeholder.com/600x400/D84040/FFFFFF?text=${encodeURIComponent(eventData.name)}`,
+        isDynamic: true // Flag to identify dynamic events
+      }));
+      
+      // Merge sample events with dynamic events
+      const combined = [...sampleEvents, ...dynamicEventsList];
+      setAllEvents(combined);
+      console.log('🎫 Loaded events:', combined.length, 'total (', dynamicEventsList.length, 'dynamic)');
+    } catch (error) {
+      console.error('❌ Error loading dynamic events:', error);
+      setAllEvents(sampleEvents); // Fallback to sample events
     }
-  ];
+  };
+
+  // Load events on component mount and when localStorage changes
+  useEffect(() => {
+    loadAllEvents();
+    
+    // Listen for storage changes to update events in real-time
+    const handleStorageChange = (e) => {
+      if (e.key === 'dynamic_events') {
+        loadAllEvents();
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
   const handleSearch = (e) => {
     setSearchQuery(e.target.value);
@@ -69,10 +109,10 @@ const Home = () => {
 
   // NEW: Carousel navigation
   const handleNextEvent = () => {
-    setCurrentEventIndex((prev) => (prev + 1) % sampleEvents.length);
+    setCurrentEventIndex((prev) => (prev + 1) % allEvents.length);
   };
 
-  const currentEvent = sampleEvents[currentEventIndex];
+  const currentEvent = allEvents[currentEventIndex];
 
   return (
     <div>
@@ -80,7 +120,7 @@ const Home = () => {
       <div className="flex justify-center items-center mb-8 animate-fade-in-up">
         <Carousel className="w-full max-w-6xl rounded-2xl overflow-hidden">
           <CarouselContent>
-            {sampleEvents.map((event, index) => (
+            {allEvents.map((event, index) => (
               <CarouselItem key={event.id} className="p-0 h-full">
                 <Card className="rounded-none border-none bg-transparent shadow-lg h-full">
                   <CardContent className="flex p-0 aspect-[21/9] relative h-full w-full overflow-hidden">
@@ -147,7 +187,7 @@ const Home = () => {
           </h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {(() => {
-              const filteredEvents = sampleEvents
+              const filteredEvents = allEvents
                 .filter(event =>
                   searchQuery.length === 0 ||
                   event.name.toLowerCase().startsWith(searchQuery.toLowerCase())

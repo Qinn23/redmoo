@@ -112,12 +112,22 @@ export function createEventTransaction(params) {
     name,
     description,
     venue,
+    address,
     eventDate, // timestamp in milliseconds
+    time,
+    closingTime,
     vipPriceInMist,
     normalPriceInMist,
-    maxTicketsPerWallet = 4,
     totalVipSeats,
-    totalNormalSeats
+    totalNormalSeats,
+    category,
+    language,
+    ageRating,
+    genres,
+    imageUrl,
+    seatingImageUrl,
+    importantNotices,
+    termsAndConditions
   } = params;
 
   if (!CONTRACT_CONFIG) {
@@ -133,11 +143,25 @@ export function createEventTransaction(params) {
     target: `${CONTRACT_CONFIG.packageId}::ticketing::create_event`,
     arguments: [
       tx.pure(eventId), // event_id: u64
+      tx.pure(Array.from(new TextEncoder().encode(name || ''))), // name: vector<u8>
+      tx.pure(Array.from(new TextEncoder().encode(description || ''))), // description: vector<u8>
+      tx.pure(Array.from(new TextEncoder().encode(venue || ''))), // venue: vector<u8>
+      tx.pure(Array.from(new TextEncoder().encode(address || ''))), // address: vector<u8>
       tx.pure(eventDate), // event_date: u64
+      tx.pure(Array.from(new TextEncoder().encode(time || ''))), // time: vector<u8>
+      tx.pure(Array.from(new TextEncoder().encode(closingTime || ''))), // closing_time: vector<u8>
       tx.pure(vipPriceInMist.toString()), // vip_price: u64
       tx.pure(normalPriceInMist.toString()), // normal_price: u64
       tx.pure(totalVipSeats), // total_vip_seats: u64
       tx.pure(totalNormalSeats), // total_normal_seats: u64
+      tx.pure(Array.from(new TextEncoder().encode(category || ''))), // category: vector<u8>
+      tx.pure(Array.from(new TextEncoder().encode(language || ''))), // language: vector<u8>
+      tx.pure(Array.from(new TextEncoder().encode(ageRating || ''))), // age_rating: vector<u8>
+      tx.pure(Array.from(new TextEncoder().encode(genres || ''))), // genres: vector<u8>
+      tx.pure(Array.from(new TextEncoder().encode(imageUrl || ''))), // image_url: vector<u8>
+      tx.pure(Array.from(new TextEncoder().encode(seatingImageUrl || ''))), // seating_image_url: vector<u8>
+      tx.pure(Array.from(new TextEncoder().encode(importantNotices || ''))), // important_notices: vector<u8>
+      tx.pure(Array.from(new TextEncoder().encode(termsAndConditions || ''))), // terms_and_conditions: vector<u8>
     ],
   });
 

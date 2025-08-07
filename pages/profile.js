@@ -454,13 +454,84 @@ const sectionContent = (active, handleLogout, walletInfo, tickets, loadingTicket
           <div className="bg-white rounded-lg p-4 space-y-4">
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
               <p className="text-blue-800 font-domine text-sm">
-                <strong>Note:</strong> This form only includes fields that are stored on-chain by your current Move contract.
+                <strong>Enhanced Event Creation:</strong> All event details will be stored on-chain with the updated Move contract.
               </p>
             </div>
             
+            {/* Basic Event Information */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 font-domine mb-2">Event Date & Time</label>
+                <label className="block text-sm font-semibold text-gray-700 font-domine mb-2">Event Name *</label>
+                <input
+                  type="text"
+                  value={eventForm.name}
+                  onChange={(e) => setEventForm({...eventForm, name: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg font-domine focus:outline-none focus:ring-2 focus:ring-[#D84040]"
+                  placeholder="Taylor Swift - The Eras Tour"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 font-domine mb-2">Category *</label>
+                <select
+                  value={eventForm.category}
+                  onChange={(e) => setEventForm({...eventForm, category: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg font-domine focus:outline-none focus:ring-2 focus:ring-[#D84040]"
+                  required
+                >
+                  <option value="">Select Category</option>
+                  <option value="Concert">Concert</option>
+                  <option value="Sports">Sports</option>
+                  <option value="Theater">Theater</option>
+                  <option value="Conference">Conference</option>
+                  <option value="Festival">Festival</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Description */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 font-domine mb-2">Description *</label>
+              <textarea
+                value={eventForm.description}
+                onChange={(e) => setEventForm({...eventForm, description: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg font-domine focus:outline-none focus:ring-2 focus:ring-[#D84040]"
+                rows="3"
+                placeholder="Experience the magic of Taylor Swift's The Eras Tour live in concert..."
+                required
+              />
+            </div>
+
+            {/* Venue Information */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 font-domine mb-2">Venue Name *</label>
+                <input
+                  type="text"
+                  value={eventForm.venue}
+                  onChange={(e) => setEventForm({...eventForm, venue: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg font-domine focus:outline-none focus:ring-2 focus:ring-[#D84040]"
+                  placeholder="MetLife Stadium"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 font-domine mb-2">Venue Address *</label>
+                <input
+                  type="text"
+                  value={eventForm.address}
+                  onChange={(e) => setEventForm({...eventForm, address: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg font-domine focus:outline-none focus:ring-2 focus:ring-[#D84040]"
+                  placeholder="1 MetLife Stadium Dr, East Rutherford, NJ 07073"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Date and Time */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 font-domine mb-2">Event Date *</label>
                 <input
                   type="datetime-local"
                   value={eventForm.eventDate}
@@ -470,7 +541,33 @@ const sectionContent = (active, handleLogout, walletInfo, tickets, loadingTicket
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 font-domine mb-2">VIP Price (SUI)</label>
+                <label className="block text-sm font-semibold text-gray-700 font-domine mb-2">Start Time *</label>
+                <input
+                  type="text"
+                  value={eventForm.time}
+                  onChange={(e) => setEventForm({...eventForm, time: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg font-domine focus:outline-none focus:ring-2 focus:ring-[#D84040]"
+                  placeholder="8:00 PM"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 font-domine mb-2">End Time *</label>
+                <input
+                  type="text"
+                  value={eventForm.closingTime}
+                  onChange={(e) => setEventForm({...eventForm, closingTime: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg font-domine focus:outline-none focus:ring-2 focus:ring-[#D84040]"
+                  placeholder="11:30 PM"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Pricing */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 font-domine mb-2">VIP Price (SUI) *</label>
                 <input
                   type="number"
                   step="0.01"
@@ -482,11 +579,8 @@ const sectionContent = (active, handleLogout, walletInfo, tickets, loadingTicket
                   required
                 />
               </div>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 font-domine mb-2">Normal Price (SUI)</label>
+                <label className="block text-sm font-semibold text-gray-700 font-domine mb-2">Normal Price (SUI) *</label>
                 <input
                   type="number"
                   step="0.01"
@@ -498,8 +592,12 @@ const sectionContent = (active, handleLogout, walletInfo, tickets, loadingTicket
                   required
                 />
               </div>
+            </div>
+
+            {/* Seating */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 font-domine mb-2">VIP Seats</label>
+                <label className="block text-sm font-semibold text-gray-700 font-domine mb-2">VIP Seats *</label>
                 <input
                   type="number"
                   min="1"
@@ -510,11 +608,8 @@ const sectionContent = (active, handleLogout, walletInfo, tickets, loadingTicket
                   required
                 />
               </div>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 font-domine mb-2">Normal Seats</label>
+                <label className="block text-sm font-semibold text-gray-700 font-domine mb-2">Normal Seats *</label>
                 <input
                   type="number"
                   min="1"
@@ -526,10 +621,94 @@ const sectionContent = (active, handleLogout, walletInfo, tickets, loadingTicket
                 />
               </div>
             </div>
+
+            {/* Additional Details */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 font-domine mb-2">Language</label>
+                <input
+                  type="text"
+                  value={eventForm.language}
+                  onChange={(e) => setEventForm({...eventForm, language: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg font-domine focus:outline-none focus:ring-2 focus:ring-[#D84040]"
+                  placeholder="English"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 font-domine mb-2">Age Rating</label>
+                <select
+                  value={eventForm.ageRating}
+                  onChange={(e) => setEventForm({...eventForm, ageRating: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg font-domine focus:outline-none focus:ring-2 focus:ring-[#D84040]"
+                >
+                  <option value="">Select Age Rating</option>
+                  <option value="All Ages">All Ages</option>
+                  <option value="18+">18+</option>
+                  <option value="21+">21+</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 font-domine mb-2">Genres</label>
+                <input
+                  type="text"
+                  value={eventForm.genres}
+                  onChange={(e) => setEventForm({...eventForm, genres: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg font-domine focus:outline-none focus:ring-2 focus:ring-[#D84040]"
+                  placeholder="Pop, Country, Alternative"
+                />
+              </div>
+            </div>
+
+            {/* Images */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 font-domine mb-2">Event Image URL</label>
+                <input
+                  type="url"
+                  value={eventForm.imageUrl}
+                  onChange={(e) => setEventForm({...eventForm, imageUrl: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg font-domine focus:outline-none focus:ring-2 focus:ring-[#D84040]"
+                  placeholder="https://example.com/event-image.jpg"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 font-domine mb-2">Seating Chart URL</label>
+                <input
+                  type="url"
+                  value={eventForm.seatingImageUrl}
+                  onChange={(e) => setEventForm({...eventForm, seatingImageUrl: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg font-domine focus:outline-none focus:ring-2 focus:ring-[#D84040]"
+                  placeholder="https://example.com/seating-chart.jpg"
+                />
+              </div>
+            </div>
+
+            {/* Notices and Terms */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 font-domine mb-2">Important Notices</label>
+              <textarea
+                value={eventForm.importantNotices}
+                onChange={(e) => setEventForm({...eventForm, importantNotices: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg font-domine focus:outline-none focus:ring-2 focus:ring-[#D84040]"
+                rows="2"
+                placeholder="Please arrive 30 minutes before the show. No cameras or recording devices allowed..."
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 font-domine mb-2">Terms and Conditions</label>
+              <textarea
+                value={eventForm.termsAndConditions}
+                onChange={(e) => setEventForm({...eventForm, termsAndConditions: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg font-domine focus:outline-none focus:ring-2 focus:ring-[#D84040]"
+                rows="2"
+                placeholder="Tickets are non-refundable and non-transferable. The venue reserves the right to refuse entry..."
+              />
+            </div>
             
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-              <p className="text-yellow-800 font-domine text-sm">
-                <strong>Fields stored on-chain:</strong> Event Date, VIP Price, Normal Price, VIP Seats, Normal Seats, and auto-generated Event ID.
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+              <p className="text-green-800 font-domine text-sm">
+                <strong>Enhanced Storage:</strong> All event details including name, description, venue, images, and policies will be stored on-chain.
               </p>
             </div>
             
@@ -678,12 +857,22 @@ export default function Profile() {
     name: '',
     description: '',
     venue: '',
+    address: '',
     eventDate: '',
+    time: '',
+    closingTime: '',
     vipPrice: '',
     normalPrice: '',
     vipSeats: '',
     normalSeats: '',
-    maxTicketsPerWallet: 4
+    category: '',
+    language: '',
+    ageRating: '',
+    genres: '',
+    imageUrl: '',
+    seatingImageUrl: '',
+    importantNotices: '',
+    termsAndConditions: ''
   });
   const [isCreatingEvent, setIsCreatingEvent] = useState(false);
 
@@ -921,10 +1110,12 @@ export default function Profile() {
       return;
     }
     
-    // Validate form data (only fields that contract actually uses)
-    if (!eventForm.eventDate || !eventForm.vipPrice || !eventForm.normalPrice || 
-        !eventForm.vipSeats || !eventForm.normalSeats) {
-      alert('Please fill in all required fields: Event Date, VIP Price, Normal Price, VIP Seats, and Normal Seats');
+    // Validate required form data
+    if (!eventForm.name || !eventForm.description || !eventForm.venue || !eventForm.address ||
+        !eventForm.eventDate || !eventForm.time || !eventForm.closingTime ||
+        !eventForm.vipPrice || !eventForm.normalPrice || 
+        !eventForm.vipSeats || !eventForm.normalSeats || !eventForm.category) {
+      alert('Please fill in all required fields marked with *');
       return;
     }
     
@@ -939,13 +1130,27 @@ export default function Profile() {
       const vipPriceInMist = BigInt(Math.floor(parseFloat(eventForm.vipPrice) * 1_000_000_000));
       const normalPriceInMist = BigInt(Math.floor(parseFloat(eventForm.normalPrice) * 1_000_000_000));
       
-      // Create event transaction (only with fields that contract supports)
+      // Create event transaction with all fields
       const txb = contractUtils.createEventTransaction({
+        name: eventForm.name,
+        description: eventForm.description,
+        venue: eventForm.venue,
+        address: eventForm.address,
         eventDate: eventDateTime,
+        time: eventForm.time,
+        closingTime: eventForm.closingTime,
         vipPriceInMist: vipPriceInMist,
         normalPriceInMist: normalPriceInMist,
         totalVipSeats: parseInt(eventForm.vipSeats),
         totalNormalSeats: parseInt(eventForm.normalSeats),
+        category: eventForm.category,
+        language: eventForm.language || 'English',
+        ageRating: eventForm.ageRating || 'All Ages',
+        genres: eventForm.genres || '',
+        imageUrl: eventForm.imageUrl || '',
+        seatingImageUrl: eventForm.seatingImageUrl || '',
+        importantNotices: eventForm.importantNotices || '',
+        termsAndConditions: eventForm.termsAndConditions || ''
       });
       
       // Sign and execute transaction
@@ -960,38 +1165,213 @@ export default function Profile() {
       
       console.log('Event creation result:', result);
       
-      // Extract event object ID from the transaction result
-      const eventObjectId = result.objectChanges?.find(
-        change => change.type === 'created' && change.objectType?.includes('EventData')
+      // Enhanced extraction logic with comprehensive debugging
+      console.log('🔍 FULL TRANSACTION RESULT DEBUG:', {
+        digest: result.digest,
+        effects: result.effects,
+        objectChanges: result.objectChanges,
+        events: result.events,
+        balanceChanges: result.balanceChanges,
+        fullResult: result
+      });
+      
+      // Check if transaction was successful
+      if (result.effects?.status?.status !== 'success') {
+        console.error('❌ Transaction failed:', result.effects?.status);
+        throw new Error(`Transaction failed: ${result.effects?.status?.error || 'Unknown error'}`);
+      }
+      
+      // Check if objectChanges exists
+      if (!result.objectChanges || result.objectChanges.length === 0) {
+        console.error('❌ No objectChanges in transaction result');
+        throw new Error('Transaction succeeded but no objects were created. This might indicate a contract execution issue.');
+      }
+      
+      // Log all created objects for debugging
+      const allCreatedObjects = result.objectChanges.filter(change => change.type === 'created');
+      console.log('🔍 ALL CREATED OBJECTS:', allCreatedObjects.map(obj => ({
+        objectId: obj.objectId,
+        objectType: obj.objectType,
+        owner: obj.owner,
+        digest: obj.digest
+      })));
+      
+      // Try multiple methods to extract the event object ID
+      let eventObjectId = null;
+      let extractionMethod = 'unknown';
+      
+      // Method 1: Look for EventData in objectType (case-insensitive)
+      eventObjectId = result.objectChanges?.find(
+        change => change.type === 'created' && 
+        change.objectType?.toLowerCase().includes('eventdata')
       )?.objectId;
+      if (eventObjectId) extractionMethod = 'EventData pattern match';
+      
+      // Method 2: Look for full package path with correct module name
+      if (!eventObjectId) {
+        eventObjectId = result.objectChanges?.find(
+          change => change.type === 'created' && 
+          change.objectType?.includes(`${CONTRACT_CONFIG.packageId}::ticketing::EventData`)
+        )?.objectId;
+        if (eventObjectId) extractionMethod = 'Full package path match';
+      }
+      
+      // Method 3: Look for any object containing our package ID
+      if (!eventObjectId) {
+        const packageObjects = result.objectChanges?.filter(
+          change => change.type === 'created' && 
+          change.objectType?.includes(CONTRACT_CONFIG.packageId)
+        );
+        console.log('🔍 Objects from our package:', packageObjects);
+        
+        if (packageObjects && packageObjects.length === 1) {
+          eventObjectId = packageObjects[0].objectId;
+          extractionMethod = 'Single package object';
+        } else if (packageObjects && packageObjects.length > 1) {
+          // Multiple objects created - try to find the EventData one
+          const eventObject = packageObjects.find(obj => 
+            obj.objectType?.toLowerCase().includes('event') ||
+            obj.objectType?.toLowerCase().includes('data')
+          );
+          if (eventObject) {
+            eventObjectId = eventObject.objectId;
+            extractionMethod = 'Multiple objects - event pattern';
+          }
+        }
+      }
+      
+      // Method 4: Look for objects created in events (Sui events)
+      if (!eventObjectId && result.events && result.events.length > 0) {
+        console.log('🔍 Checking transaction events for object creation:', result.events);
+        for (const event of result.events) {
+          if (event.parsedJson && event.parsedJson.event_id) {
+            eventObjectId = event.parsedJson.event_id;
+            extractionMethod = 'Transaction event';
+            break;
+          }
+        }
+      }
+      
+      // Method 5: Fallback - use the first created object if it's the only one
+      if (!eventObjectId && allCreatedObjects.length === 1) {
+        eventObjectId = allCreatedObjects[0].objectId;
+        extractionMethod = 'Single created object fallback';
+        console.log('⚠️ Using fallback method - single created object');
+      }
+      
+      console.log('🔍 EVENT OBJECT EXTRACTION RESULT:', {
+        found: !!eventObjectId,
+        objectId: eventObjectId,
+        method: extractionMethod,
+        totalCreatedObjects: allCreatedObjects.length
+      });
       
       if (eventObjectId) {
-        alert(`Event created successfully! 
-
-Event Object ID: ${eventObjectId}
-
-IMPORTANT: Please add this Event Object ID to your contract configuration file (utils/contract-config.js) in the eventObjectIds mapping so buyers can purchase tickets.
-
-Example:
-eventObjectIds: {
-  5: '${eventObjectId}', // New Event
-  ...
-}`);
+        console.log(`✅ Successfully extracted event object ID: ${eventObjectId} (method: ${extractionMethod})`);
         
-        // Reset form (only the fields we actually use)
+        // Auto-generate next event ID
+        const existingEventIds = Object.keys(CONTRACT_CONFIG.eventObjectIds).map(Number);
+        const nextEventId = existingEventIds.length > 0 ? Math.max(...existingEventIds) + 1 : 1;
+        
+        // Automatically add to runtime configuration
+        CONTRACT_CONFIG.eventObjectIds[nextEventId] = eventObjectId;
+        
+        // Save to localStorage for persistence across sessions
+        const dynamicEvents = JSON.parse(localStorage.getItem('dynamic_events') || '{}');
+        dynamicEvents[nextEventId] = {
+          objectId: eventObjectId,
+          name: eventForm.name,
+          description: eventForm.description,
+          venue: eventForm.venue,
+          address: eventForm.address,
+          eventDate: eventDateTime,
+          time: eventForm.time,
+          closingTime: eventForm.closingTime,
+          vipPrice: parseFloat(eventForm.vipPrice),
+          normalPrice: parseFloat(eventForm.normalPrice),
+          totalVipSeats: parseInt(eventForm.vipSeats),
+          totalNormalSeats: parseInt(eventForm.normalSeats),
+          category: eventForm.category,
+          language: eventForm.language || 'English',
+          ageRating: eventForm.ageRating || 'All Ages',
+          genres: eventForm.genres || '',
+          imageUrl: eventForm.imageUrl || '',
+          seatingImageUrl: eventForm.seatingImageUrl || '',
+          importantNotices: eventForm.importantNotices || '',
+          termsAndConditions: eventForm.termsAndConditions || '',
+          createdAt: Date.now(),
+          transactionHash: result.digest
+        };
+        localStorage.setItem('dynamic_events', JSON.stringify(dynamicEvents));
+        
+        alert(`🎉 Event created successfully and automatically configured!
+
+Event Name: ${eventForm.name}
+Event ID: ${nextEventId}
+Event Object ID: ${eventObjectId}
+Extraction Method: ${extractionMethod}
+
+✅ The event is now immediately available for ticket purchases!
+✅ Buyers can now visit: /seat-selection/${nextEventId}
+
+Transaction Hash: ${result.digest}`);
+        
+        // Reset form with all fields
         setEventForm({
           name: '',
           description: '',
           venue: '',
+          address: '',
           eventDate: '',
+          time: '',
+          closingTime: '',
           vipPrice: '',
           normalPrice: '',
           vipSeats: '',
           normalSeats: '',
-          maxTicketsPerWallet: 4
+          category: '',
+          language: '',
+          ageRating: '',
+          genres: '',
+          imageUrl: '',
+          seatingImageUrl: '',
+          importantNotices: '',
+          termsAndConditions: ''
         });
       } else {
-        throw new Error('Could not extract event object ID from transaction result');
+        // Enhanced error message with debugging info
+        const debugInfo = {
+          transactionStatus: result.effects?.status?.status,
+          objectChangesCount: result.objectChanges?.length || 0,
+          createdObjectsCount: allCreatedObjects.length,
+          allObjectTypes: allCreatedObjects.map(obj => obj.objectType),
+          packageId: CONTRACT_CONFIG.packageId,
+          extractionMethods: [
+            'EventData pattern match',
+            'Full package path match', 
+            'Single package object',
+            'Multiple objects - event pattern',
+            'Transaction event',
+            'Single created object fallback'
+          ]
+        };
+        
+        console.error('❌ EVENT OBJECT EXTRACTION FAILED:', debugInfo);
+        
+        throw new Error(`Could not extract event object ID from transaction result.
+
+DEBUG INFO:
+- Transaction Status: ${debugInfo.transactionStatus}
+- Objects Created: ${debugInfo.createdObjectsCount}
+- Object Types: ${debugInfo.allObjectTypes.join(', ') || 'None'}
+- Package ID: ${debugInfo.packageId}
+
+This usually means:
+1. The contract function didn't create an EventData object
+2. The object type doesn't match expected patterns
+3. Multiple objects were created and we couldn't identify the event
+
+Check browser console for full transaction details.`);
       }
       
     } catch (error) {

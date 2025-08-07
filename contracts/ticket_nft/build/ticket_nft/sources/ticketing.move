@@ -11,6 +11,7 @@ use sui::coin;
 use sui::balance;
 use sui::object;
 use sui::tx_context;
+use sui::table;
 
 /// Constants
 const MAX_TICKETS_PER_USER: u8 = 4;
@@ -43,12 +44,34 @@ public struct Ticket has key, store {
 public struct EventData has key, store {
     id: UID,
     event_id: u64,
+    name: vector<u8>,
+    description: vector<u8>,
+    venue: vector<u8>,
+    address: vector<u8>,
     event_date: u64,
+    time: vector<u8>,
+    closing_time: vector<u8>,
     vip_price: u64,
     normal_price: u64,
     total_vip_seats: u64,
     total_normal_seats: u64,
+    category: vector<u8>,
+    language: vector<u8>,
+    age_rating: vector<u8>,
+    genres: vector<u8>,
+    image_url: vector<u8>,
+    seating_image_url: vector<u8>,
+    important_notices: vector<u8>,
+    terms_and_conditions: vector<u8>,
     organizer: address,
+}
+
+/// Wallet tracker struct to track user wallets and ticket ownership
+public struct WalletTracker has key {
+    id: UID,
+    user_tickets: table::Table<address, vector<u64>>, // user address -> list of ticket IDs
+    ticket_owners: table::Table<u64, address>, // ticket ID -> owner address
+    user_purchase_counts: table::Table<address, u64>, // user address -> total tickets purchased
 }
 
 /// User data to track ticket count and ban status  
@@ -66,7 +89,7 @@ public struct Treasury has key {
     organizer: address,
 }
 
-/// Initialize the module - creates treasury
+/// Initialize the module - creates treasury and wallet tracker
 fun init(ctx: &mut TxContext) {
     let treasury = Treasury {
         id: object::new(ctx),
@@ -74,26 +97,63 @@ fun init(ctx: &mut TxContext) {
         organizer: tx_context::sender(ctx),
     };
     transfer::share_object(treasury);
+    
+    // Create wallet tracker
+    let wallet_tracker = WalletTracker {
+        id: object::new(ctx),
+        user_tickets: table::new(ctx),
+        ticket_owners: table::new(ctx),
+        user_purchase_counts: table::new(ctx),
+    };
+    transfer::share_object(wallet_tracker);
 }
 
 /// Create a new event
 public entry fun create_event(
     event_id: u64,
+    name: vector<u8>,
+    description: vector<u8>,
+    venue: vector<u8>,
+    address: vector<u8>,
     event_date: u64,
+    time: vector<u8>,
+    closing_time: vector<u8>,
     vip_price: u64,
     normal_price: u64,
     total_vip_seats: u64,
     total_normal_seats: u64,
+    category: vector<u8>,
+    language: vector<u8>,
+    age_rating: vector<u8>,
+    genres: vector<u8>,
+    image_url: vector<u8>,
+    seating_image_url: vector<u8>,
+    important_notices: vector<u8>,
+    terms_and_conditions: vector<u8>,
     ctx: &mut TxContext
 ) {
     let event_data = EventData {
         id: object::new(ctx),
         event_id,
+        name,
+        description,
+        venue,
+        address,
         event_date,
+        time,
+        closing_time,
         vip_price,
         normal_price,
         total_vip_seats,
         total_normal_seats,
+        category,
+        language,
+        age_rating,
+        genres,
+        image_url,
+        seating_image_url,
+        important_notices,
+        terms_and_conditions,
         organizer: tx_context::sender(ctx),
     };
     transfer::share_object(event_data);
