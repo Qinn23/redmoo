@@ -266,27 +266,69 @@ export default function SeatSelection() {
   // Success modal state
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [purchaseDetails, setPurchaseDetails] = useState(null);
-  
-  // Demo contract addresses (these would be deployed addresses in production)
-  // TODO: Replace these with actual deployed contract addresses when smart contract is live
-  const DEMO_PACKAGE_ID = "0x1"; // Replace with actual deployed package ID
-  const DEMO_EVENT_OBJECT_ID = "0x2"; // Replace with actual event object ID
-  const DEMO_WALLET_TRACKER_ID = "0x3"; // Replace with actual wallet tracker ID
-  const DEMO_CLOCK_OBJECT_ID = "0x6"; // Sui clock object
-
-  /*
-   * DEPLOYMENT CHECKLIST:
-   * 1. Deploy the smart contract to Sui devnet/mainnet
-   * 2. Replace demo object IDs above with actual deployed addresses
-   * 3. Uncomment the real transaction code in proceedToCheckout()
-   * 4. Remove the demo simulation logic
-   * 5. Update the demo mode notices in the UI
-   */
 
   useEffect(() => {
     if (id) {
-      const foundEvent = sampleEvents.find(e => e.id === parseInt(id));
-      setEvent(foundEvent);
+      // First, try to find in sample events
+      let foundEvent = sampleEvents.find(e => e.id === parseInt(id));
+      
+      // If not found in sample events, check dynamic events from localStorage
+      if (!foundEvent) {
+        try {
+          const dynamicEvents = JSON.parse(localStorage.getItem('dynamic_events') || '{}');
+          const dynamicEvent = dynamicEvents[parseInt(id)];
+          
+          if (dynamicEvent) {
+            // Convert dynamic event to the format expected by the UI
+            foundEvent = {
+              id: parseInt(id),
+              name: dynamicEvent.name,
+              description: dynamicEvent.description,
+              venue: dynamicEvent.venue,
+              address: dynamicEvent.address,
+              date: new Date(dynamicEvent.eventDate).toISOString().split('T')[0], // YYYY-MM-DD format
+              time: dynamicEvent.time,
+              closingTime: dynamicEvent.closingTime,
+              price: `$${dynamicEvent.normalPrice}`, // Format as string for compatibility
+              category: dynamicEvent.category,
+              language: dynamicEvent.language,
+              ageRating: dynamicEvent.ageRating,
+              genres: Array.isArray(dynamicEvent.genres) ? dynamicEvent.genres : [dynamicEvent.genres],
+              // Calculate available tickets based on contract values
+              availableTickets: dynamicEvent.totalVipSeats + dynamicEvent.totalNormalSeats,
+              totalTickets: dynamicEvent.totalVipSeats + dynamicEvent.totalNormalSeats,
+              importantNotices: dynamicEvent.importantNotices,
+              termsAndConditions: dynamicEvent.termsAndConditions,
+              // Use provided image or fallback to default
+              seatingImage: dynamicEvent.seatingImageUrl || dynamicEvent.imageUrl || getEventBannerImage(parseInt(id)),
+              // Add contract-specific data
+              contractData: {
+                objectId: dynamicEvent.objectId,
+                vipPrice: dynamicEvent.vipPrice,
+                normalPrice: dynamicEvent.normalPrice,
+                totalVipSeats: dynamicEvent.totalVipSeats,
+                totalNormalSeats: dynamicEvent.totalNormalSeats
+              }
+            };
+            
+            console.log('✅ Loaded dynamic event:', foundEvent);
+            
+            // Update CONTRACT_CONFIG runtime to include this event
+            if (!CONTRACT_CONFIG.eventObjectIds[parseInt(id)]) {
+              CONTRACT_CONFIG.eventObjectIds[parseInt(id)] = dynamicEvent.objectId;
+            }
+          }
+        } catch (error) {
+          console.error('❌ Error loading dynamic event:', error);
+        }
+      }
+      
+      if (foundEvent) {
+        setEvent(foundEvent);
+        console.log(`🎫 Event loaded: ${foundEvent.name} (ID: ${id})`);
+      } else {
+        console.log(`❌ Event not found for ID: ${id}`);
+      }
     }
   }, [id]);
 
@@ -389,8 +431,8 @@ export default function SeatSelection() {
           number: `${String.fromCharCode(64 + row)}${seat}`,
           type: isVip ? 'vip' : 'normal',
           price: isVip 
-            ? Math.floor(parseFloat(event.price.replace('$', '')) * 1.5)
-            : parseFloat(event.price.replace('$', '')),
+            ? (event.contractData?.vipPrice || Math.floor(parseFloat(event.price.replace('$', '')) * 1.5))
+            : (event.contractData?.normalPrice || parseFloat(event.price.replace('$', ''))),
           status: 'available' // Will be updated below
         });
         seatIndex++;
@@ -694,7 +736,7 @@ export default function SeatSelection() {
         }
         
         tx.moveCall({
-          target: `${CONTRACT_CONFIG.packageId}::${CONTRACT_CONFIG.module}::purchase_ticket`,
+          target: `${CONTRACT_CONFIG.packageId}::ticketing::purchase_ticket`,
           arguments: [
             tx.object(eventObjectId), // Use existing event object created by organizer
             tx.object(CONTRACT_CONFIG.treasuryId), // treasury
@@ -943,7 +985,7 @@ export default function SeatSelection() {
                     <span className="font-semibold text-[#D84040] font-domine">VIP Section</span>
                   </div>
                   <p className="text-sm text-gray-600 font-domine">
-                    Premium location • Enhanced amenities • ${Math.floor(parseFloat(event.price.replace('$', '')) * 1.5)}/seat
+                    Premium location • Enhanced amenities • ${event.contractData?.vipPrice || Math.floor(parseFloat(event.price.replace('$', '')) * 1.5)}/seat
                   </p>
                 </div>
                 
@@ -953,7 +995,7 @@ export default function SeatSelection() {
                     <span className="font-semibold text-[#D84040] font-domine">Standard Section</span>
                   </div>
                   <p className="text-sm text-gray-600 font-domine">
-                    Great views • Standard amenities • ${event.price}/seat
+                    Great views • Standard amenities • ${event.contractData?.normalPrice || event.price}/seat
                   </p>
                 </div>
               </div>
@@ -1063,7 +1105,7 @@ export default function SeatSelection() {
                     </span>
                   </div>
                   <p className="text-sm text-gray-600 font-domine">
-                    ${Math.floor(parseFloat(event.price.replace('$', '')) * 1.5)} × {selectedSeats.vip.length}
+                    ${event.contractData?.vipPrice || Math.floor(parseFloat(event.price.replace('$', '')) * 1.5)} × {selectedSeats.vip.length}
                   </p>
                 </div>
               )}
@@ -1085,7 +1127,7 @@ export default function SeatSelection() {
                     </span>
                   </div>
                   <p className="text-sm text-gray-600 font-domine">
-                    ${parseFloat(event.price.replace('$', ''))} × {selectedSeats.normal.length}
+                    ${event.contractData?.normalPrice || parseFloat(event.price.replace('$', ''))} × {selectedSeats.normal.length}
                   </p>
                 </div>
               )}
@@ -1150,7 +1192,7 @@ export default function SeatSelection() {
             
             {getTotalSelectedSeats() > 0 && isConnected && (
               <p className="text-xs text-gray-500 text-center mt-2 font-domine">
-                � Real blockchain: This will create actual NFT tickets and charge real SUI
+                Real blockchain: This will create actual NFT tickets and charge real SUI
               </p>
             )}
           </div>
