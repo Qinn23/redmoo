@@ -146,162 +146,12 @@ function generateTicketQRData(ticket) {
   return JSON.stringify(qrData);
 }
 
-// Account Selector Component with Enhanced Discovery
-function AccountSelector({ wallet, currentAddress, onSwitch, onClose }) {
-  const [accounts, setAccounts] = useState(wallet.getAccounts());
-  const [loading, setLoading] = useState(false);
-  
-  console.log('AccountSelector Debug:', {
-    accountsLength: accounts.length,
-    accounts: accounts,
-    currentAddress: currentAddress,
-    walletConnected: wallet.connected
-  });
-
-  // Enhanced account discovery function (same as in main component but localized)
-  const discoverAccounts = async () => {
-    setLoading(true);
-    console.log('🔍 AccountSelector: Discovering accounts...');
-    
-    try {
-      let allAccounts = [];
-      
-      // Method 1: Standard getAccounts()
-      const standardAccounts = wallet.getAccounts();
-      allAccounts = [...standardAccounts];
-      
-      // Method 2: Try adapter directly
-      if (wallet.adapter && wallet.adapter.getAccounts) {
-        try {
-          const adapterAccounts = await wallet.adapter.getAccounts();
-          adapterAccounts.forEach(acc => {
-            if (!allAccounts.find(existing => existing.address === acc.address)) {
-              allAccounts.push(acc);
-            }
-          });
-        } catch (err) {
-          console.log('Adapter method failed:', err);
-        }
-      }
-      
-      // Method 3: Check window.suiet if available
-      if (window.suiet && window.suiet.getAccounts) {
-        try {
-          const windowAccounts = await window.suiet.getAccounts();
-          windowAccounts.forEach(acc => {
-            if (!allAccounts.find(existing => existing.address === acc.address)) {
-              allAccounts.push(acc);
-            }
-          });
-        } catch (err) {
-          console.log('Window suiet method failed:', err);
-        }
-      }
-      
-      console.log('🎯 AccountSelector: Total accounts found:', allAccounts.length);
-      setAccounts(allAccounts);
-      return allAccounts;
-      
-    } catch (error) {
-      console.error('❌ AccountSelector: Error discovering accounts:', error);
-      return accounts;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (accounts.length <= 1) {
-    return (
-      <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-lg">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="font-semibold text-[#A31D1D] font-domine">Enhanced Account Discovery</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-        
-        <div className="space-y-4">
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-            <p className="text-blue-800 font-domine text-sm font-semibold mb-1">
-              📊 Current Status:
-            </p>
-            <p className="text-blue-700 font-domine text-sm">
-              • Accounts detected: {accounts.length}
-            </p>
-            <p className="text-blue-700 font-domine text-sm">
-              • Current account: {currentAddress?.slice(0, 8)}...{currentAddress?.slice(-6)}
-            </p>
-          </div>
-          
-          <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-            <p className="text-green-800 font-domine text-sm font-semibold mb-2">
-              🔍 Try Enhanced Discovery:
-            </p>
-            <p className="text-green-700 font-domine text-sm mb-3">
-              We can try multiple methods to discover additional accounts in your wallet.
-            </p>
-            <button
-              onClick={discoverAccounts}
-              disabled={loading}
-              className="w-full px-3 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700 transition-colors font-domine disabled:opacity-50"
-            >
-              {loading ? '🔄 Discovering...' : '🔍 Discover More Accounts'}
-            </button>
-          </div>
-          
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-            <p className="text-yellow-800 font-domine text-sm font-semibold mb-2">
-              📝 Manual Method:
-            </p>
-            <ol className="text-yellow-700 font-domine text-sm space-y-1 list-decimal list-inside">
-              <li>Open your Suiet wallet extension</li>
-              <li>Add more accounts if you haven't</li>
-              <li>Make sure accounts are enabled for dApps</li>
-              <li>Switch to desired account</li>
-              <li>Refresh this page</li>
-            </ol>
-          </div>
-          
-          <div className="flex gap-2">
-            <button
-              onClick={() => {
-                console.log('Refreshing page to detect account changes...');
-                window.location.reload();
-              }}
-              className="flex-1 px-3 py-2 bg-[#D84040] text-white rounded text-sm hover:bg-[#A31D1D] transition-colors font-domine"
-            >
-              🔄 Refresh Page
-            </button>
-            <button
-              onClick={() => {
-                console.log('=== WALLET DEBUG INFO ===');
-                console.log('Wallet connected:', wallet.connected);
-                console.log('Current account:', wallet.account);
-                console.log('All accounts from getAccounts():', wallet.getAccounts());
-                console.log('Available wallet methods:', Object.keys(wallet));
-                console.log('Window.suiet:', window.suiet);
-                alert('Check the browser console for detailed wallet account information.');
-              }}
-              className="flex-1 px-3 py-2 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors font-domine"
-            >
-              🐛 Debug
-            </button>
-          </div>
-          
-          <p className="text-xs text-gray-500 font-domine">
-            💡 Note: Wallet extensions control account exposure for security. Some wallets only show one account at a time to dApps.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
+// Account Selector Component - Now just shows instructions for manual switching
+function AccountSelector({ wallet, currentAddress, onClose }) {
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-lg">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="font-semibold text-[#A31D1D] font-domine">Choose Account ({accounts.length} found)</h3>
+        <h3 className="font-semibold text-[#A31D1D] font-domine">Account Switching</h3>
         <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -309,57 +159,42 @@ function AccountSelector({ wallet, currentAddress, onSwitch, onClose }) {
         </button>
       </div>
       
-      <div className="space-y-2">
-        {accounts.map((acc, index) => (
-          <div 
-            key={acc.address} 
-            className={`flex items-center justify-between p-3 rounded-lg border transition-all ${
-              acc.address === currentAddress 
-                ? 'bg-[#F8F2DE] border-[#D84040] border-2' 
-                : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
-            }`}
+      <div className="space-y-4">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+          <p className="text-blue-800 font-domine text-sm font-semibold mb-1">
+            Current Account:
+          </p>
+          <p className="text-blue-700 font-domine text-sm font-mono">
+            {currentAddress?.slice(0, 8)}...{currentAddress?.slice(-6)}
+          </p>
+        </div>
+        
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+          <p className="text-yellow-800 font-domine text-sm font-semibold mb-2">
+            To Switch Accounts:
+          </p>
+          <ol className="text-yellow-700 font-domine text-sm space-y-1 list-decimal list-inside">
+            <li>Open your Suiet wallet extension</li>
+            <li>Click on the account dropdown</li>
+            <li>Select the account you want to use</li>
+            <li>Refresh this page to see the new account</li>
+          </ol>
+        </div>
+        
+        <div className="flex gap-2">
+          <button
+            onClick={() => window.location.reload()}
+            className="flex-1 px-3 py-2 bg-[#D84040] text-white rounded text-sm hover:bg-[#A31D1D] transition-colors font-domine"
           >
-            <div className="flex-1">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-gray-700 font-domine">
-                  Account #{index + 1}
-                </span>
-                {acc.address === currentAddress && (
-                  <span className="px-2 py-1 bg-[#D84040] text-white rounded text-xs font-domine">
-                    Active
-                  </span>
-                )}
-              </div>
-              <span className={`font-mono text-sm ${
-                acc.address === currentAddress ? "text-[#D84040] font-bold" : "text-gray-600"
-              }`}>
-                {acc.address.slice(0, 8)}...{acc.address.slice(-6)}
-              </span>
-            </div>
-            
-            {acc.address !== currentAddress && (
-              <button
-                className="px-3 py-1 bg-[#D84040] text-white rounded text-sm hover:bg-[#A31D1D] transition-colors font-domine"
-                onClick={() => onSwitch(acc.address)}
-              >
-                Switch
-              </button>
-            )}
-          </div>
-        ))}
-      </div>
-      
-      <div className="mt-3 flex justify-between items-center">
-        <p className="text-xs text-gray-500 font-domine">
-          Click "Switch" to change accounts
-        </p>
-        <button
-          onClick={discoverAccounts}
-          disabled={loading}
-          className="px-3 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600 transition-colors font-domine disabled:opacity-50"
-        >
-          {loading ? 'Searching...' : 'Find More'}
-        </button>
+            🔄 Refresh Page
+          </button>
+          <button
+            onClick={onClose}
+            className="flex-1 px-3 py-2 bg-gray-500 text-white rounded text-sm hover:bg-gray-600 transition-colors font-domine"
+          >
+            Close
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -498,7 +333,7 @@ function TicketDetailsModal({ ticket, isOpen, onClose }) {
   );
 }
 
-const sectionContent = (active, handleLogout, handleSwitchAccount, walletInfo, tickets, loadingTickets, showPurchaseSuccess, clearDemoPurchases, onViewDetails, showAccountSelector, handleSwitchToAccount, wallet, setShowAccountSelector) => {
+const sectionContent = (active, handleLogout, walletInfo, tickets, loadingTickets, showPurchaseSuccess, clearDemoPurchases, onViewDetails, showAccountSelector, wallet, setShowAccountSelector, balanceLoading, getFormattedBalance) => {
   if (active === "mytickets") {
     return (
       <div className="space-y-6">
@@ -613,34 +448,14 @@ const sectionContent = (active, handleLogout, handleSwitchAccount, walletInfo, t
         <h2 className="text-2xl font-bold text-[#A31D1D] font-chonburi">Settings</h2>
         
         <div className="space-y-4">
-          {/* Debug Button - for testing wallet accounts */}
-          <button
-            className="w-full bg-yellow-50 text-yellow-700 px-6 py-4 rounded-lg font-domine font-medium hover:bg-yellow-100 transition-all text-left border border-yellow-200"
-            onClick={async () => {
-              debugWalletAccounts();
-              const allAccounts = await discoverAllAccounts();
-              alert(`Found ${allAccounts.length} accounts. Check the browser console (F12) for detailed information.`);
-            }}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="font-semibold">🐛 Enhanced Account Discovery</div>
-                <div className="text-sm opacity-75">Discover all accounts using multiple methods</div>
-              </div>
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-          </button>
-
           <button
             className="w-full bg-[#F8F2DE] text-[#A31D1D] px-6 py-4 rounded-lg font-domine font-medium hover:bg-[#ECDCBF] transition-all text-left border border-[#A31D1D]"
-            onClick={handleSwitchAccount}
+            onClick={() => setShowAccountSelector(!showAccountSelector)}
           >
             <div className="flex items-center justify-between">
               <div>
-                <div className="font-semibold">Switch Account</div>
-                <div className="text-sm opacity-75">Switch to another account in your wallet</div>
+                <div className="font-semibold">Switch Account Instructions</div>
+                <div className="text-sm opacity-75">Learn how to switch accounts in your wallet</div>
               </div>
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
@@ -648,13 +463,12 @@ const sectionContent = (active, handleLogout, handleSwitchAccount, walletInfo, t
             </div>
           </button>
 
-          {/* Account Selector Modal/Dropdown */}
+          {/* Account Instructions Modal/Dropdown */}
           {showAccountSelector && (
             <div className="mt-4">
               <AccountSelector
                 wallet={wallet}
                 currentAddress={wallet.account?.address}
-                onSwitch={handleSwitchToAccount}
                 onClose={() => setShowAccountSelector(false)}
               />
             </div>
@@ -887,112 +701,6 @@ export default function Profile() {
     }
   }, [isConnected, account]);
 
-  // Debug wallet accounts function
-  const debugWalletAccounts = () => {
-    console.log('=== WALLET DEBUG INFO ===');
-    console.log('Wallet connected:', wallet.connected);
-    console.log('Current account:', wallet.account);
-    console.log('All accounts from getAccounts():', wallet.getAccounts());
-    console.log('Number of accounts:', wallet.getAccounts().length);
-    console.log('Available wallet methods:', Object.keys(wallet));
-    
-    try {
-      const accounts = wallet.getAccounts();
-      accounts.forEach((acc, index) => {
-        console.log(`Account ${index + 1}:`, {
-          address: acc.address,
-          publicKey: acc.publicKey,
-          chains: acc.chains
-        });
-      });
-    } catch (error) {
-      console.error('Error getting accounts:', error);
-    }
-
-    // Try to access additional wallet methods that might expose more accounts
-    if (wallet.adapter) {
-      console.log('Wallet adapter:', wallet.adapter);
-      console.log('Adapter methods:', Object.keys(wallet.adapter));
-    }
-    
-    // Check if there are other ways to access accounts
-    if (window.suiet) {
-      console.log('Window suiet object:', window.suiet);
-    }
-  };
-
-  // Enhanced account discovery function
-  const discoverAllAccounts = async () => {
-    console.log('🔍 Discovering all available accounts...');
-    let allAccounts = [];
-    
-    try {
-      // Method 1: Standard getAccounts()
-      const standardAccounts = wallet.getAccounts();
-      console.log('Method 1 - Standard getAccounts():', standardAccounts);
-      allAccounts = [...standardAccounts];
-      
-      // Method 2: Try adapter directly if available
-      if (wallet.adapter && wallet.adapter.getAccounts) {
-        try {
-          const adapterAccounts = await wallet.adapter.getAccounts();
-          console.log('Method 2 - Adapter getAccounts():', adapterAccounts);
-          // Merge unique accounts
-          adapterAccounts.forEach(acc => {
-            if (!allAccounts.find(existing => existing.address === acc.address)) {
-              allAccounts.push(acc);
-            }
-          });
-        } catch (err) {
-          console.log('Adapter getAccounts failed:', err);
-        }
-      }
-      
-      // Method 3: Try requesting additional permissions
-      if (wallet.requestPermissions) {
-        try {
-          console.log('Method 3 - Requesting additional permissions...');
-          await wallet.requestPermissions(['viewAccount']);
-          const permissionAccounts = wallet.getAccounts();
-          console.log('Method 3 - After permissions:', permissionAccounts);
-          permissionAccounts.forEach(acc => {
-            if (!allAccounts.find(existing => existing.address === acc.address)) {
-              allAccounts.push(acc);
-            }
-          });
-        } catch (err) {
-          console.log('Request permissions failed:', err);
-        }
-      }
-      
-      // Method 4: Try connecting to get all accounts
-      if (allAccounts.length <= 1) {
-        try {
-          console.log('Method 4 - Re-connecting to discover accounts...');
-          await wallet.disconnect();
-          await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
-          await wallet.connect();
-          const reconnectAccounts = wallet.getAccounts();
-          console.log('Method 4 - After reconnect:', reconnectAccounts);
-          reconnectAccounts.forEach(acc => {
-            if (!allAccounts.find(existing => existing.address === acc.address)) {
-              allAccounts.push(acc);
-            }
-          });
-        } catch (err) {
-          console.log('Reconnect method failed:', err);
-        }
-      }
-      
-      console.log('🎯 Total unique accounts discovered:', allAccounts.length);
-      return allAccounts;
-      
-    } catch (error) {
-      console.error('❌ Error discovering accounts:', error);
-      return wallet.getAccounts(); // Fallback to standard method
-    }
-  };
-
   const handleLogout = async () => {
     try {
       console.log('🔌 Disconnecting wallet...');
@@ -1006,104 +714,6 @@ export default function Profile() {
       console.error("❌ Disconnect error:", error);
       // Even if there's an error, try to redirect
       router.push("/");
-    }
-  };
-
-  const handleSwitchAccount = async () => {
-    // First, try to discover all available accounts
-    console.log('🔄 Attempting to discover all accounts...');
-    const allAccounts = await discoverAllAccounts();
-    
-    console.log('Switch Account clicked - Available accounts:', allAccounts.length);
-    
-    if (allAccounts.length <= 1) {
-      // Try one more method: Force account selection
-      try {
-        console.log('🔍 Trying to force account selection...');
-        
-        // Method: Disconnect and connect with explicit account selection
-        const userWantsToTry = confirm(`
-🔄 Enhanced Account Switching
-
-Currently ${allAccounts.length} account detected. Let's try to discover more accounts:
-
-Option 1: Reconnect with Account Selection
-- This will disconnect and reconnect your wallet
-- You may be prompted to select which accounts to connect
-- This can help expose multiple accounts to the dApp
-
-Option 2: Manual Extension Switch (Current Method)
-- Switch accounts in your Suiet extension
-- Then refresh this page
-
-Try Option 1 (Reconnect with Account Selection)?
-        `);
-        
-        if (userWantsToTry) {
-          try {
-            console.log('🔌 Disconnecting wallet...');
-            await wallet.disconnect();
-            
-            // Wait a moment
-            await new Promise(resolve => setTimeout(resolve, 1500));
-            
-            console.log('� Reconnecting wallet...');
-            await wallet.connect();
-            
-            // Check if we now have more accounts
-            const newAccounts = wallet.getAccounts();
-            console.log('🎯 Accounts after reconnect:', newAccounts.length);
-            
-            if (newAccounts.length > 1) {
-              setShowAccountSelector(true);
-              return;
-            } else {
-              alert('Still only 1 account detected. You may need to enable multiple accounts in your Suiet wallet extension settings, or add more accounts to your wallet first.');
-            }
-          } catch (error) {
-            console.error('Reconnection failed:', error);
-            alert('Reconnection failed. Please try the manual method: switch accounts in your wallet extension and refresh the page.');
-          }
-        } else {
-          // Manual method instructions
-          const userResponse = confirm(`
-🔄 Manual Account Switching Guide
-
-To switch accounts:
-
-1. 📱 Open your Suiet wallet extension
-2. 🔄 Switch to the account you want to use
-3. � Refresh this page (F5)
-4. ✅ The dApp will connect to your newly selected account
-
-Would you like to refresh the page now to detect account changes?
-          `);
-          
-          if (userResponse) {
-            window.location.reload();
-          }
-        }
-      } catch (error) {
-        console.error('Account switching attempt failed:', error);
-        alert('Account switching failed. Please try switching accounts in your wallet extension and refresh the page.');
-      }
-      return;
-    }
-    
-    // If multiple accounts are available, show the selector
-    setShowAccountSelector(!showAccountSelector);
-  };
-
-  // Switch account handler
-  const handleSwitchToAccount = async (accountAddress) => {
-    try {
-      console.log('Switching to account:', accountAddress);
-      await wallet.switchAccount(accountAddress);
-      setShowAccountSelector(false);
-      console.log('Account switched successfully');
-    } catch (error) {
-      console.error('Failed to switch account:', error);
-      alert('Failed to switch account. Please try again.');
     }
   };
 
@@ -1223,7 +833,6 @@ Would you like to refresh the page now to detect account changes?
             {sectionContent(
               active,
               handleLogout,
-              handleSwitchAccount,
               walletInfo,
               tickets,
               loadingTickets,
@@ -1231,9 +840,10 @@ Would you like to refresh the page now to detect account changes?
               clearDemoPurchases,
               handleViewDetails,
               showAccountSelector,
-              handleSwitchToAccount,
               wallet,
-              setShowAccountSelector
+              setShowAccountSelector,
+              balanceLoading,
+              getFormattedBalance
             )}
           </div>
         </div>
