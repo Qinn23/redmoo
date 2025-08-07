@@ -1,5 +1,8 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
+import { useWallet } from "../contexts/WalletContext";
+import { getEnhancedTicketInfo, loadContractConfig } from "../utils/contract-interactions";
+import { SuiClient } from '@mysten/sui.js/client';
 
 const sampleResaleEvents = [
   { id: 3, name: "NBA Finals Game 7", date: "2024-06-15", venue: "Chase Center", price: "$200", seller: "0x123...abcd", seat: "Section A, Row 5, Seat 10" },
@@ -9,37 +12,106 @@ const sampleResaleEvents = [
 export default function BuyResale() {
   const router = useRouter();
   const [search, setSearch] = useState("");
-  const [walletConnected, setWalletConnected] = useState(false);
+  const { isConnected } = useWallet();
   const [showWalletMessage, setShowWalletMessage] = useState(false);
+  const [resaleTickets, setResaleTickets] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setWalletConnected(typeof window !== 'undefined' && localStorage.getItem('walletConnected') === 'true');
-    const onStorage = () => setWalletConnected(localStorage.getItem('walletConnected') === 'true');
-    window.addEventListener('storage', onStorage);
-    const interval = setInterval(() => {
-      setWalletConnected(localStorage.getItem('walletConnected') === 'true');
-    }, 500);
-    return () => {
-      window.removeEventListener('storage', onStorage);
-      clearInterval(interval);
-    };
+    loadResaleTickets();
   }, []);
 
-  const filteredEvents = search
-    ? sampleResaleEvents.filter(e =>
-        e.name.toLowerCase().includes(search.toLowerCase()) ||
-        e.venue.toLowerCase().includes(search.toLowerCase())
-      )
-    : sampleResaleEvents;
+  const loadResaleTickets = async () => {
+    try {
+      setLoading(true);
+      
+      // Load contract configuration
+      await loadContractConfig();
+      
+      // Initialize Sui client
+      const suiClient = new SuiClient({ 
+        url: process.env.NEXT_PUBLIC_SUI_NETWORK || 'https://fullnode.devnet.sui.io:443' 
+      });
 
-  const handleBuyClick = (event) => {
-    if (!walletConnected) {
+      // In a real implementation, you would:
+      // 1. Query all Ticket objects that have for_sale = true
+      // 2. Get their details and associated event information
+      // For now, we'll use sample data since we need to implement ticket querying
+      
+      // This is a placeholder - in reality you'd query the blockchain for tickets with for_sale = true
+      const mockResaleTickets = [
+        {
+          id: 'ticket_1',
+          ticketObjectId: '0x1234567890abcdef',
+          eventName: 'Taylor Swift Concert',
+          eventDate: '2024-12-15',
+          venue: 'Madison Square Garden',
+          seat: 'Section A, Row 3, Seat 15',
+          seatType: 1, // VIP
+          originalPrice: 150,
+          resalePrice: 165, // 110% of original
+          seller: '0x1234...abcd',
+          forSale: true
+        },
+        {
+          id: 'ticket_2', 
+          ticketObjectId: '0xabcdef1234567890',
+          eventName: 'NFL Championship',
+          eventDate: '2024-11-28',
+          venue: 'MetLife Stadium',
+          seat: 'Section 200, Row 10, Seat 5',
+          seatType: 2, // Normal
+          originalPrice: 75,
+          resalePrice: 82, // 109% of original
+          seller: '0x5678...efgh',
+          forSale: true
+        }
+      ];
+
+      setResaleTickets(mockResaleTickets);
+      
+    } catch (error) {
+      console.error('Error loading resale tickets:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredTickets = search
+    ? resaleTickets.filter(ticket =>
+        ticket.eventName.toLowerCase().includes(search.toLowerCase()) ||
+        ticket.venue.toLowerCase().includes(search.toLowerCase())
+      )
+    : resaleTickets;
+
+  const handleBuyClick = (ticket) => {
+    if (!isConnected) {
       setShowWalletMessage(true);
       setTimeout(() => setShowWalletMessage(false), 3000);
     } else {
-      router.push(`/detailsOfResalepage/${event.id}`);
+      router.push(`/detailsOfResalepage/${ticket.ticketObjectId}`);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="bg-white p-8 rounded-lg shadow-lg text-center w-full max-w-2xl">
+          <h1 className="text-3xl font-bold text-[#A31D1D] mb-4 font-chonburi">Loading Resale Tickets...</h1>
+        </div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="bg-white p-8 rounded-lg shadow-lg text-center w-full max-w-2xl">
+          <h1 className="text-3xl font-bold text-[#A31D1D] mb-4 font-chonburi">Loading Resale Tickets...</h1>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-center justify-center h-full">
@@ -64,22 +136,29 @@ export default function BuyResale() {
             onChange={e => setSearch(e.target.value)}
           />
         </div>
-        <div className="grid gap-4">
-          {filteredEvents.length === 0 && search && <div className="text-gray-500">No events found.</div>}
-          {filteredEvents.map(event => (
-            <div key={event.id} className="flex flex-col md:flex-row items-center justify-between bg-[#F8F2DE] rounded p-4 shadow">
+                <div className="grid gap-4">
+          {filteredTickets.length === 0 && search && <div className="text-gray-500">No resale tickets found.</div>}
+          {filteredTickets.length === 0 && !search && <div className="text-gray-500">No tickets available for resale.</div>}
+          {filteredTickets.map(ticket => (
+            <div key={ticket.id} className="flex flex-col md:flex-row items-center justify-between bg-[#F8F2DE] rounded p-4 shadow">
               <div className="flex-1 text-left">
-                <div className="font-bold text-lg font-domine text-[#A31D1D]">{event.name}</div>
-                <div className="text-gray-700 font-domine">{event.date} &bull; {event.venue}</div>
-                <div className="text-gray-600 font-domine">Seller: {event.seller || 'N/A'}</div>
-                <div className="text-gray-600 font-domine">Seat: {event.seat || 'N/A'}</div>
-                <div className="text-[#D84040] font-bold font-domine">{event.price}</div>
+                <div className="font-bold text-lg font-domine text-[#A31D1D]">{ticket.eventName}</div>
+                <div className="text-gray-700 font-domine">{ticket.eventDate} &bull; {ticket.venue}</div>
+                <div className="text-gray-600 font-domine">Seller: {ticket.seller || 'N/A'}</div>
+                <div className="text-gray-600 font-domine">Seat: {ticket.seat || 'N/A'}</div>
+                <div className="text-gray-600 font-domine">
+                  Type: {ticket.seatType === 1 ? 'VIP' : 'Normal'} &bull; 
+                  Original: ${(ticket.originalPrice / 1_000_000_000).toFixed(2)}
+                </div>
+                <div className="text-[#D84040] font-bold font-domine">
+                  Resale Price: ${(ticket.resalePrice / 1_000_000_000).toFixed(2)}
+                </div>
               </div>
               <button 
-                onClick={() => handleBuyClick(event)}
+                onClick={() => handleBuyClick(ticket)}
                 className="mt-4 md:mt-0 md:ml-6 bg-[#D84040] text-white px-6 py-2 rounded-full hover:bg-[#A31D1D] font-domine font-medium transition-all"
               >
-                View Details
+                Buy Ticket
               </button>
             </div>
           ))}

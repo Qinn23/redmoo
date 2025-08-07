@@ -21,7 +21,7 @@ const domine = Domine({
 });
 
 // NFT Ticket Card Component
-function TicketCard({ ticket, onViewDetails }) {
+function TicketCard({ ticket, onViewDetails, onSellTicket }) {
   const formatDate = (timestamp) => {
     return new Date(parseInt(timestamp)).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -90,13 +90,25 @@ function TicketCard({ ticket, onViewDetails }) {
             <p className="text-xs text-gray-500 font-domine">Purchased</p>
             <p className="text-sm font-medium text-gray-700 font-domine">{formatDate(ticket.purchaseDate)}</p>
           </div>
-          <div className="ml-6">
+          <div className="ml-6 flex gap-2">
             <button 
               onClick={() => onViewDetails(ticket)}
-              className="bg-gradient-to-r from-[#D84040] to-[#A31D1D] text-white px-6 py-2.5 rounded-lg text-sm font-domine hover:from-[#A31D1D] hover:to-[#8B1919] transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105 whitespace-nowrap"
+              className="bg-gradient-to-r from-[#D84040] to-[#A31D1D] text-white px-4 py-2.5 rounded-lg text-sm font-domine hover:from-[#A31D1D] hover:to-[#8B1919] transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105 whitespace-nowrap"
             >
               Check-In
             </button>
+            {ticket.forSale ? (
+              <span className="bg-green-100 text-green-800 px-4 py-2.5 rounded-lg text-sm font-domine font-medium whitespace-nowrap">
+                For Sale
+              </span>
+            ) : (
+              <button 
+                onClick={() => onSellTicket(ticket)}
+                className="bg-orange-500 text-white px-4 py-2.5 rounded-lg text-sm font-domine hover:bg-orange-600 transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105 whitespace-nowrap"
+              >
+                Sell
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -334,7 +346,7 @@ function TicketDetailsModal({ ticket, isOpen, onClose }) {
   );
 }
 
-const sectionContent = (active, handleLogout, walletInfo, tickets, loadingTickets, showPurchaseSuccess, clearDemoPurchases, onViewDetails, showAccountSelector, wallet, setShowAccountSelector, balanceLoading, getFormattedBalance, eventForm, setEventForm, handleCreateEvent, isCreatingEvent) => {
+const sectionContent = (active, handleLogout, walletInfo, tickets, loadingTickets, showPurchaseSuccess, clearDemoPurchases, onViewDetails, onSellTicket, showAccountSelector, wallet, setShowAccountSelector, balanceLoading, getFormattedBalance, eventForm, setEventForm, handleCreateEvent, isCreatingEvent) => {
   if (active === "mytickets") {
     return (
       <div className="space-y-6">
@@ -367,7 +379,7 @@ const sectionContent = (active, handleLogout, walletInfo, tickets, loadingTicket
         ) : tickets.length > 0 ? (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {tickets.map((ticket, index) => (
-              <TicketCard key={`${ticket.id}-${index}`} ticket={ticket} onViewDetails={onViewDetails} />
+              <TicketCard key={`${ticket.id}-${index}`} ticket={ticket} onViewDetails={onViewDetails} onSellTicket={onSellTicket} />
             ))}
           </div>
         ) : (
@@ -852,6 +864,12 @@ export default function Profile() {
   const [showTicketModal, setShowTicketModal] = useState(false);
   const [showAccountSelector, setShowAccountSelector] = useState(false);
   
+  // Sell ticket state
+  const [showSellModal, setShowSellModal] = useState(false);
+  const [sellTicket, setSellTicket] = useState(null);
+  const [resalePrice, setResalePrice] = useState('');
+  const [isSelling, setIsSelling] = useState(false);
+  
   // Organizer event creation state
   const [eventForm, setEventForm] = useState({
     name: '',
@@ -1078,6 +1096,77 @@ export default function Profile() {
   const handleCloseModal = () => {
     setShowTicketModal(false);
     setSelectedTicket(null);
+  };
+
+  const handleSellTicket = (ticket) => {
+    setSellTicket(ticket);
+    setResalePrice('');
+    setShowSellModal(true);
+  };
+
+  const handleCloseSellModal = () => {
+    setShowSellModal(false);
+    setSellTicket(null);
+    setResalePrice('');
+    setIsSelling(false);
+  };
+
+  const handleConfirmSell = async () => {
+    if (!sellTicket || !resalePrice) return;
+
+    try {
+      setIsSelling(true);
+
+      // Convert resale price to MIST
+      const resalePriceInMist = contractUtils.suiToMist(parseFloat(resalePrice));
+      
+      // Check price limit (110% of original price)
+      const maxResalePrice = contractUtils.mistToSui(sellTicket.originalPrice) * 1.1;
+      if (parseFloat(resalePrice) > maxResalePrice) {
+        alert(`Resale price cannot exceed ${maxResalePrice.toFixed(2)} SUI (110% of original price)`);
+        return;
+      }
+
+      // Create sell transaction
+      const sellTx = contractUtils.createSellTicketTransaction({
+        ticketObjectId: sellTicket.objectId,
+        resalePrice: resalePriceInMist
+      });
+
+      // Execute transaction
+      const result = await wallet.signAndExecuteTransactionBlock({
+        transactionBlock: sellTx,
+        options: {
+          showInput: true,
+          showEffects: true,
+          showEvents: true,
+          showObjectChanges: true,
+          showBalanceChanges: true,
+        },
+      });
+
+      console.log('Sell transaction result:', result);
+
+      if (result.digest) {
+        // Update ticket in local state
+        setTickets(prevTickets => 
+          prevTickets.map(ticket => 
+            ticket.id === sellTicket.id 
+              ? { ...ticket, forSale: true, resalePrice: resalePriceInMist }
+              : ticket
+          )
+        );
+
+        alert(`Ticket listed for sale at ${resalePrice} SUI!`);
+        handleCloseSellModal();
+      }
+
+    } catch (error) {
+      console.error('Error selling ticket:', error);
+      alert('Failed to list ticket for sale. Please try again.');
+    } finally {
+      setIsSelling(false);
+    }
   };
 
   // Debug function to clear demo purchases
@@ -1490,6 +1579,7 @@ Check browser console for full transaction details.`);
               showPurchaseSuccess,
               clearDemoPurchases,
               handleViewDetails,
+              handleSellTicket,
               showAccountSelector,
               wallet,
               setShowAccountSelector,
@@ -1510,6 +1600,68 @@ Check browser console for full transaction details.`);
         isOpen={showTicketModal}
         onClose={handleCloseModal}
       />
+
+      {/* Sell Ticket Modal */}
+      {showSellModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+            <div className="p-6">
+              <h3 className="text-xl font-bold text-[#A31D1D] font-chonburi mb-4">
+                Sell Ticket
+              </h3>
+              
+              {sellTicket && (
+                <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+                  <h4 className="font-semibold text-[#A31D1D] font-domine">{sellTicket.eventName}</h4>
+                  <p className="text-sm text-gray-600 font-domine">Seat: {sellTicket.seatId}</p>
+                  <p className="text-sm text-gray-600 font-domine">
+                    Original Price: {contractUtils.mistToSui(sellTicket.originalPrice).toFixed(2)} SUI
+                  </p>
+                  <p className="text-sm text-gray-600 font-domine">
+                    Max Resale Price: {(contractUtils.mistToSui(sellTicket.originalPrice) * 1.1).toFixed(2)} SUI
+                  </p>
+                </div>
+              )}
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 font-domine mb-2">
+                  Resale Price (SUI)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max={sellTicket ? (contractUtils.mistToSui(sellTicket.originalPrice) * 1.1).toFixed(2) : undefined}
+                  value={resalePrice}
+                  onChange={(e) => setResalePrice(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D84040] focus:border-transparent font-domine"
+                  placeholder="Enter resale price"
+                />
+                <p className="text-xs text-gray-500 font-domine mt-1">
+                  Maximum allowed: 110% of original price
+                </p>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={handleCloseSellModal}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-domine transition-colors"
+                  disabled={isSelling}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleConfirmSell}
+                  disabled={!resalePrice || isSelling || parseFloat(resalePrice) <= 0}
+                  className="flex-1 px-4 py-2 bg-[#D84040] text-white rounded-lg hover:bg-[#A31D1D] disabled:bg-gray-300 disabled:cursor-not-allowed font-domine transition-colors"
+                >
+                  {isSelling ? 'Listing...' : 'List for Sale'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

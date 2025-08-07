@@ -446,6 +446,134 @@ export class ContractEventListener {
   }
 }
 
+/**
+ * Create a transaction to list a ticket for resale
+ */
+export function createSellTicketTransaction(params) {
+  const {
+    ticketObjectId,
+    resalePrice
+  } = params;
+
+  if (!CONTRACT_CONFIG) {
+    throw new Error('Contract not initialized. Call loadContractConfig() first.');
+  }
+
+  const tx = new TransactionBlock();
+
+  // Call the sell_ticket function
+  tx.moveCall({
+    target: `${CONTRACT_CONFIG.packageId}::ticketing::sell_ticket`,
+    arguments: [
+      tx.object(ticketObjectId),
+      tx.pure(resalePrice)
+    ]
+  });
+
+  return tx;
+}
+
+/**
+ * Create a transaction to purchase a resale ticket
+ */
+export function createPurchaseResaleTicketTransaction(params) {
+  const {
+    ticketObjectId,
+    resalePrice
+  } = params;
+
+  if (!CONTRACT_CONFIG) {
+    throw new Error('Contract not initialized. Call loadContractConfig() first.');
+  }
+
+  const tx = new TransactionBlock();
+
+  // Split coins for payment
+  const [coin] = tx.splitCoins(tx.gas, [tx.pure(resalePrice)]);
+
+  // Call the purchase_resale_ticket function
+  tx.moveCall({
+    target: `${CONTRACT_CONFIG.packageId}::ticketing::purchase_resale_ticket`,
+    arguments: [
+      tx.object(ticketObjectId),
+      tx.object(CONTRACT_CONFIG.objects.treasury),
+      coin
+    ]
+  });
+
+  // Note: The ticket ownership transfer is handled differently in the current implementation
+  // The ticket state is updated but ownership isn't transferred automatically
+  // In production, you'd want to implement a proper escrow system
+
+  return tx;
+}
+
+/**
+ * Create a transaction to cancel ticket sale
+ */
+export function createCancelTicketSaleTransaction(params) {
+  const {
+    ticketObjectId
+  } = params;
+
+  if (!CONTRACT_CONFIG) {
+    throw new Error('Contract not initialized. Call loadContractConfig() first.');
+  }
+
+  const tx = new TransactionBlock();
+
+  // Call the cancel_ticket_sale function
+  tx.moveCall({
+    target: `${CONTRACT_CONFIG.packageId}::ticketing::cancel_ticket_sale`,
+    arguments: [
+      tx.object(ticketObjectId)
+    ]
+  });
+
+  return tx;
+}
+
+/**
+ * Get enhanced ticket info including resale status
+ */
+export async function getEnhancedTicketInfo(suiClient, ticketObjectId) {
+  if (!CONTRACT_CONFIG) {
+    throw new Error('Contract not initialized. Call loadContractConfig() first.');
+  }
+
+  try {
+    const result = await suiClient.devInspectTransactionBlock({
+      transactionBlock: (() => {
+        const tx = new TransactionBlock();
+        tx.moveCall({
+          target: `${CONTRACT_CONFIG.packageId}::ticketing::get_ticket_info`,
+          arguments: [tx.object(ticketObjectId)]
+        });
+        return tx;
+      })(),
+      sender: '0x0000000000000000000000000000000000000000000000000000000000000000'
+    });
+
+    if (result.results && result.results[0] && result.results[0].returnValues) {
+      const returnValues = result.results[0].returnValues;
+      return {
+        eventId: returnValues[0],
+        seatId: returnValues[1],
+        seatType: returnValues[2],
+        originalPrice: returnValues[3],
+        resaleCount: returnValues[4],
+        forSale: returnValues[5],
+        resalePrice: returnValues[6]
+      };
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error getting enhanced ticket info:', error);
+    return null;
+  }
+}
+
 export default {
   initializeContract,
   loadContractConfig,
@@ -459,6 +587,10 @@ export default {
   getUserTickets,
   isSeatAvailable,
   getWalletTicketCount,
+  createSellTicketTransaction,
+  createPurchaseResaleTicketTransaction,
+  createCancelTicketSaleTransaction,
+  getEnhancedTicketInfo,
   PriceUtils,
   ContractEventListener,
 };
