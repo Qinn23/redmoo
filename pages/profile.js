@@ -1134,8 +1134,8 @@ export default function Profile() {
       });
 
       // Execute transaction
-      const result = await wallet.signAndExecuteTransactionBlock({
-        transactionBlock: sellTx,
+      const result = await wallet.signAndExecuteTransaction({
+        transaction: sellTx,
         options: {
           showInput: true,
           showEffects: true,
@@ -1243,8 +1243,8 @@ export default function Profile() {
       });
       
       // Sign and execute transaction
-      const result = await wallet.signAndExecuteTransactionBlock({
-        transactionBlock: txb,
+      const result = await wallet.signAndExecuteTransaction({
+        transaction: txb,
         options: {
           showEffects: true,
           showEvents: true,
@@ -1261,102 +1261,46 @@ export default function Profile() {
         objectChanges: result.objectChanges,
         events: result.events,
         balanceChanges: result.balanceChanges,
+        status: result.effects?.status,
         fullResult: result
       });
       
-      // Check if transaction was successful
-      if (result.effects?.status?.status !== 'success') {
+      // Check if transaction was successful - Updated for different wallet response formats
+      const isSuccessful = 
+        result.effects?.status?.status === 'success' ||  // Standard format
+        result.effects?.status === 'success' ||          // Alternative format
+        result.digest;                                    // If digest exists, transaction went through
+        
+      console.log('🔍 Transaction Success Check:', {
+        standardFormat: result.effects?.status?.status === 'success',
+        alternativeFormat: result.effects?.status === 'success',
+        hasDigest: !!result.digest,
+        finalDecision: isSuccessful
+      });
+      
+      if (!isSuccessful) {
         console.error('❌ Transaction failed:', result.effects?.status);
         throw new Error(`Transaction failed: ${result.effects?.status?.error || 'Unknown error'}`);
       }
       
-      // Check if objectChanges exists
-      if (!result.objectChanges || result.objectChanges.length === 0) {
-        console.error('❌ No objectChanges in transaction result');
+      // Extract the created object ID from transaction
+      const createdObjectIds = result.objectChanges
+        ?.filter((obj) => obj.type === "created")
+        .map((obj) => obj.objectId);
+      
+      console.log('🔍 Created object IDs:', createdObjectIds);
+      
+      if (!createdObjectIds || createdObjectIds.length === 0) {
+        console.error('❌ No objects were created in the transaction');
         throw new Error('Transaction succeeded but no objects were created. This might indicate a contract execution issue.');
       }
       
-      // Log all created objects for debugging
-      const allCreatedObjects = result.objectChanges.filter(change => change.type === 'created');
-      console.log('🔍 ALL CREATED OBJECTS:', allCreatedObjects.map(obj => ({
-        objectId: obj.objectId,
-        objectType: obj.objectType,
-        owner: obj.owner,
-        digest: obj.digest
-      })));
-      
-      // Try multiple methods to extract the event object ID
-      let eventObjectId = null;
-      let extractionMethod = 'unknown';
-      
-      // Method 1: Look for EventData in objectType (case-insensitive)
-      eventObjectId = result.objectChanges?.find(
-        change => change.type === 'created' && 
-        change.objectType?.toLowerCase().includes('eventdata')
-      )?.objectId;
-      if (eventObjectId) extractionMethod = 'EventData pattern match';
-      
-      // Method 2: Look for full package path with correct module name
-      if (!eventObjectId) {
-        eventObjectId = result.objectChanges?.find(
-          change => change.type === 'created' && 
-          change.objectType?.includes(`${CONTRACT_CONFIG.packageId}::ticketing::EventData`)
-        )?.objectId;
-        if (eventObjectId) extractionMethod = 'Full package path match';
-      }
-      
-      // Method 3: Look for any object containing our package ID
-      if (!eventObjectId) {
-        const packageObjects = result.objectChanges?.filter(
-          change => change.type === 'created' && 
-          change.objectType?.includes(CONTRACT_CONFIG.packageId)
-        );
-        console.log('🔍 Objects from our package:', packageObjects);
-        
-        if (packageObjects && packageObjects.length === 1) {
-          eventObjectId = packageObjects[0].objectId;
-          extractionMethod = 'Single package object';
-        } else if (packageObjects && packageObjects.length > 1) {
-          // Multiple objects created - try to find the EventData one
-          const eventObject = packageObjects.find(obj => 
-            obj.objectType?.toLowerCase().includes('event') ||
-            obj.objectType?.toLowerCase().includes('data')
-          );
-          if (eventObject) {
-            eventObjectId = eventObject.objectId;
-            extractionMethod = 'Multiple objects - event pattern';
-          }
-        }
-      }
-      
-      // Method 4: Look for objects created in events (Sui events)
-      if (!eventObjectId && result.events && result.events.length > 0) {
-        console.log('🔍 Checking transaction events for object creation:', result.events);
-        for (const event of result.events) {
-          if (event.parsedJson && event.parsedJson.event_id) {
-            eventObjectId = event.parsedJson.event_id;
-            extractionMethod = 'Transaction event';
-            break;
-          }
-        }
-      }
-      
-      // Method 5: Fallback - use the first created object if it's the only one
-      if (!eventObjectId && allCreatedObjects.length === 1) {
-        eventObjectId = allCreatedObjects[0].objectId;
-        extractionMethod = 'Single created object fallback';
-        console.log('⚠️ Using fallback method - single created object');
-      }
-      
-      console.log('🔍 EVENT OBJECT EXTRACTION RESULT:', {
-        found: !!eventObjectId,
-        objectId: eventObjectId,
-        method: extractionMethod,
-        totalCreatedObjects: allCreatedObjects.length
-      });
+      // Get the first created object ID (should be the EventData object)
+      const eventObjectId = createdObjectIds[0];
+      console.log('✅ Event object ID extracted:', eventObjectId);
       
       if (eventObjectId) {
-        console.log(`✅ Successfully extracted event object ID: ${eventObjectId} (method: ${extractionMethod})`);
+        console.log(`✅ Successfully extracted event object ID: ${eventObjectId}`);
         
         // Auto-generate next event ID
         const existingEventIds = Object.keys(CONTRACT_CONFIG.eventObjectIds).map(Number);
@@ -1398,7 +1342,6 @@ export default function Profile() {
 Event Name: ${eventForm.name}
 Event ID: ${nextEventId}
 Event Object ID: ${eventObjectId}
-Extraction Method: ${extractionMethod}
 
 ✅ The event is now immediately available for ticket purchases!
 ✅ Buyers can now visit: /seat-selection/${nextEventId}
@@ -1428,39 +1371,9 @@ Transaction Hash: ${result.digest}`);
           termsAndConditions: ''
         });
       } else {
-        // Enhanced error message with debugging info
-        const debugInfo = {
-          transactionStatus: result.effects?.status?.status,
-          objectChangesCount: result.objectChanges?.length || 0,
-          createdObjectsCount: allCreatedObjects.length,
-          allObjectTypes: allCreatedObjects.map(obj => obj.objectType),
-          packageId: CONTRACT_CONFIG.packageId,
-          extractionMethods: [
-            'EventData pattern match',
-            'Full package path match', 
-            'Single package object',
-            'Multiple objects - event pattern',
-            'Transaction event',
-            'Single created object fallback'
-          ]
-        };
-        
-        console.error('❌ EVENT OBJECT EXTRACTION FAILED:', debugInfo);
-        
-        throw new Error(`Could not extract event object ID from transaction result.
-
-DEBUG INFO:
-- Transaction Status: ${debugInfo.transactionStatus}
-- Objects Created: ${debugInfo.createdObjectsCount}
-- Object Types: ${debugInfo.allObjectTypes.join(', ') || 'None'}
-- Package ID: ${debugInfo.packageId}
-
-This usually means:
-1. The contract function didn't create an EventData object
-2. The object type doesn't match expected patterns
-3. Multiple objects were created and we couldn't identify the event
-
-Check browser console for full transaction details.`);
+        // If no objects were created, this shouldn't happen since we check earlier
+        console.error('❌ No event object ID found');
+        throw new Error('Could not extract event object ID from transaction result. No objects were created.');
       }
       
     } catch (error) {

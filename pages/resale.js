@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
-import { useWallet } from "../contexts/WalletContext";
+import { useWallet } from '@suiet/wallet-kit';
 import { getEnhancedTicketInfo, loadContractConfig } from "../utils/contract-interactions";
 import { SuiClient } from '@mysten/sui.js/client';
 
@@ -12,7 +12,7 @@ const sampleResaleEvents = [
 export default function BuyResale() {
   const router = useRouter();
   const [search, setSearch] = useState("");
-  const { isConnected } = useWallet();
+  const wallet = useWallet();
   const [showWalletMessage, setShowWalletMessage] = useState(false);
   const [resaleTickets, setResaleTickets] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -85,7 +85,7 @@ export default function BuyResale() {
     : resaleTickets;
 
   const handleBuyClick = (ticket) => {
-    if (!isConnected) {
+    if (!wallet.connected) {
       setShowWalletMessage(true);
       setTimeout(() => setShowWalletMessage(false), 3000);
     } else {
