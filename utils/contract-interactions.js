@@ -191,6 +191,26 @@ export function createWithdrawFundsTransaction(eventObjectId, amountInMist) {
 }
 
 /**
+ * Create a transaction to remove/delete an event (organizer only)
+ */
+export function createRemoveEventTransaction(eventObjectId) {
+  if (!CONTRACT_CONFIG) {
+    throw new Error('Contract not initialized. Call loadContractConfig() first.');
+  }
+
+  const tx = new TransactionBlock();
+
+  tx.moveCall({
+    target: `${CONTRACT_CONFIG.packageId}::ticketing::remove_event`,
+    arguments: [
+      tx.object(eventObjectId), // The event to remove
+    ],
+  });
+
+  return tx;
+}
+
+/**
  * Create a transaction to toggle event status (organizer only)
  */
 export function createToggleEventStatusTransaction(eventObjectId) {

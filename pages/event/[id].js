@@ -179,7 +179,54 @@ export default function EventDetail() {
 
   useEffect(() => {
     if (id) {
-      const foundEvent = sampleEvents.find(e => e.id === parseInt(id));
+      // First check dynamic events from localStorage
+      let foundEvent = null;
+      
+      try {
+        const dynamicEvents = JSON.parse(localStorage.getItem('dynamic_events') || '{}');
+        const eventId = parseInt(id);
+        
+        if (dynamicEvents[eventId]) {
+          // Convert dynamic event data to match expected format
+          const dynamicEvent = dynamicEvents[eventId];
+          foundEvent = {
+            id: eventId,
+            name: dynamicEvent.name,
+            date: new Date(dynamicEvent.eventDate).toISOString().split('T')[0],
+            time: dynamicEvent.time,
+            closingTime: dynamicEvent.closingTime,
+            venue: dynamicEvent.venue,
+            address: dynamicEvent.address,
+            price: `$${dynamicEvent.normalPrice}`,
+            vipPrice: `$${dynamicEvent.vipPrice}`,
+            category: dynamicEvent.category,
+            description: dynamicEvent.description,
+            language: dynamicEvent.language,
+            ageRating: dynamicEvent.ageRating,
+            genres: dynamicEvent.genres ? dynamicEvent.genres.split(',').map(g => g.trim()) : [],
+            imageUrl: dynamicEvent.imageUrl,
+            seatingImageUrl: dynamicEvent.seatingImageUrl,
+            importantNotices: dynamicEvent.importantNotices,
+            termsAndConditions: dynamicEvent.termsAndConditions,
+            availableTickets: (dynamicEvent.totalVipSeats || 0) + (dynamicEvent.totalNormalSeats || 0),
+            totalTickets: (dynamicEvent.totalVipSeats || 0) + (dynamicEvent.totalNormalSeats || 0),
+            totalVipSeats: dynamicEvent.totalVipSeats,
+            totalNormalSeats: dynamicEvent.totalNormalSeats,
+            isDynamic: true, // Flag to identify dynamic events
+            objectId: dynamicEvent.objectId
+          };
+          console.log('🎫 Loaded dynamic event:', foundEvent);
+        }
+      } catch (error) {
+        console.error('❌ Error loading dynamic event:', error);
+      }
+      
+      // Fallback to sample events if not found in dynamic events
+      if (!foundEvent) {
+        foundEvent = sampleEvents.find(e => e.id === parseInt(id));
+        console.log('🎫 Loaded sample event:', foundEvent);
+      }
+      
       setEvent(foundEvent);
     }
   }, [id]);

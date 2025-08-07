@@ -346,7 +346,7 @@ function TicketDetailsModal({ ticket, isOpen, onClose }) {
   );
 }
 
-const sectionContent = (active, handleLogout, walletInfo, tickets, loadingTickets, showPurchaseSuccess, clearDemoPurchases, onViewDetails, onSellTicket, showAccountSelector, wallet, setShowAccountSelector, balanceLoading, getFormattedBalance, eventForm, setEventForm, handleCreateEvent, isCreatingEvent) => {
+const sectionContent = (active, handleLogout, walletInfo, tickets, loadingTickets, showPurchaseSuccess, clearDemoPurchases, onViewDetails, showAccountSelector, wallet, setShowAccountSelector, balanceLoading, getFormattedBalance, eventForm, setEventForm, handleCreateEvent, isCreatingEvent, router) => {
   if (active === "mytickets") {
     return (
       <div className="space-y-6">
@@ -738,27 +738,44 @@ const sectionContent = (active, handleLogout, walletInfo, tickets, loadingTicket
         <div className="bg-gray-50 rounded-lg p-6">
           <h3 className="text-xl font-bold text-[#A31D1D] font-chonburi mb-4">Current Events</h3>
           <div className="space-y-3">
-            {Object.entries(CONTRACT_CONFIG.eventObjectIds).map(([eventId, objectId]) => (
-              <div key={eventId} className="bg-white rounded-lg p-4 border border-gray-200">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <div className="font-semibold text-gray-800 font-domine">Event #{eventId}</div>
-                    <div className="text-sm text-gray-600 font-mono">{objectId}</div>
+            {/* Show dynamic events from localStorage */}
+            {(() => {
+              try {
+                const dynamicEvents = JSON.parse(localStorage.getItem('dynamic_events') || '{}');
+                return Object.entries(dynamicEvents).map(([eventId, eventData]) => (
+                  <div key={`dynamic-${eventId}`} className="bg-white rounded-lg p-4 border border-gray-200 border-l-4 border-l-green-500">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <div className="font-semibold text-gray-800 font-domine">
+                          {eventData.name} <span className="text-sm text-green-600">(Event #{eventId})</span>
+                        </div>
+                        <div className="text-sm text-gray-600 font-domine mb-1">
+                          {eventData.venue} • {new Date(eventData.eventDate).toLocaleDateString()} • {eventData.time}
+                        </div>
+                        <div className="text-xs text-gray-500 font-mono">{eventData.objectId}</div>
+                      </div>
+                      <div className="flex space-x-2">
+                        <button 
+                          onClick={() => router.push(`/event/${eventId}`)}
+                          className="px-3 py-1 bg-blue-100 text-blue-700 rounded text-sm font-domine hover:bg-blue-200"
+                        >
+                          View Details
+                        </button>
+                        <button className="px-3 py-1 bg-green-100 text-green-700 rounded text-sm font-domine hover:bg-green-200">
+                          Withdraw Funds
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex space-x-2">
-                    <button className="px-3 py-1 bg-blue-100 text-blue-700 rounded text-sm font-domine hover:bg-blue-200">
-                      View Details
-                    </button>
-                    <button className="px-3 py-1 bg-green-100 text-green-700 rounded text-sm font-domine hover:bg-green-200">
-                      Withdraw Funds
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
+                ));
+              } catch (error) {
+                console.error('Error loading dynamic events:', error);
+                return null;
+              }
+            })()}
           </div>
           
-          {Object.keys(CONTRACT_CONFIG.eventObjectIds).length === 0 && (
+          {Object.keys(JSON.parse(localStorage.getItem('dynamic_events') || '{}')).length === 0 && (
             <div className="text-center py-8 text-gray-500 font-domine">
               No events created yet. Create your first event above!
             </div>
@@ -1014,6 +1031,21 @@ export default function Profile() {
           // Convert purchases to ticket format
           userPurchases.forEach(purchase => {
             purchase.seats.forEach((seat, index) => {
+              // Try to get originalPrice and objectId from seat or purchase
+              let originalPrice = seat.originalPrice || purchase.originalPrice || (seat.price ? (seat.price * 1000000000).toString() : null);
+              let objectId = seat.objectId || purchase.objectId || null;
+              // Fallback: if seatType is VIP, use event VIP price; else use normal price
+              if (!originalPrice) {
+                if (seat.seatType === 1 && purchase.vipPrice) {
+                  originalPrice = (parseFloat(purchase.vipPrice) * 1000000000).toString();
+                } else if (seat.seatType === 2 && purchase.normalPrice) {
+                  originalPrice = (parseFloat(purchase.normalPrice) * 1000000000).toString();
+                }
+              }
+              // Fallback: generate a mock objectId if missing
+              if (!objectId) {
+                objectId = `${purchase.id}-seat-${index}-obj`;
+              }
               purchasedTickets.push({
                 id: `${purchase.id}-seat-${index}`,
                 eventName: purchase.eventName,
@@ -1023,7 +1055,9 @@ export default function Profile() {
                 eventDate: purchase.eventDate,
                 pricePaid: (seat.price * 1000000000).toString(), // Convert SUI to MIST
                 purchaseDate: purchase.purchaseDate,
-                purchaseId: purchase.id
+                purchaseId: purchase.id,
+                originalPrice,
+                objectId
               });
             });
           });
@@ -1098,7 +1132,7 @@ export default function Profile() {
     setSelectedTicket(null);
   };
 
-  const handleSellTicket = (ticket) => {
+  const handleSellTicket = async (ticket) => {
     setSellTicket(ticket);
     setResalePrice('');
     setShowSellModal(true);
@@ -1117,9 +1151,11 @@ export default function Profile() {
     try {
       setIsSelling(true);
 
-      // Convert resale price to MIST
+      // Ensure contract is initialized before creating transaction
+      contractUtils.initializeContract(CONTRACT_CONFIG);
+      // Convert resale price to MIST as BigInt (not string)
       const resalePriceInMist = contractUtils.suiToMist(parseFloat(resalePrice));
-      
+
       // Check price limit (110% of original price)
       const maxResalePrice = contractUtils.mistToSui(sellTicket.originalPrice) * 1.1;
       if (parseFloat(resalePrice) > maxResalePrice) {
@@ -1130,7 +1166,7 @@ export default function Profile() {
       // Create sell transaction
       const sellTx = contractUtils.createSellTicketTransaction({
         ticketObjectId: sellTicket.objectId,
-        resalePrice: resalePriceInMist
+        resalePrice: resalePriceInMist // Pass as BigInt
       });
 
       // Execute transaction
@@ -1211,6 +1247,19 @@ export default function Profile() {
     setIsCreatingEvent(true);
     
     try {
+      // Validate contract configuration first
+      if (!CONTRACT_CONFIG.packageId) {
+        throw new Error('Contract package ID not configured. Please check CONTRACT_CONFIG.packageId in utils/contract-config.js');
+      }
+      
+      // Check if packageId looks like a valid package address
+      if (!CONTRACT_CONFIG.packageId.startsWith('0x') || CONTRACT_CONFIG.packageId.length !== 66) {
+        throw new Error(`Invalid package ID format: ${CONTRACT_CONFIG.packageId}. Package ID should be a 66-character hex string starting with 0x.`);
+      }
+      
+      console.log('📋 Using contract package ID:', CONTRACT_CONFIG.packageId);
+      console.log('🏗️ Target function:', `${CONTRACT_CONFIG.packageId}::ticketing::create_event`);
+      
       // Initialize contract utilities
       contractUtils.initializeContract(CONTRACT_CONFIG);
       
@@ -1218,6 +1267,13 @@ export default function Profile() {
       const eventDateTime = new Date(eventForm.eventDate).getTime();
       const vipPriceInMist = BigInt(Math.floor(parseFloat(eventForm.vipPrice) * 1_000_000_000));
       const normalPriceInMist = BigInt(Math.floor(parseFloat(eventForm.normalPrice) * 1_000_000_000));
+      
+      console.log('💰 Price conversion:', {
+        vipPriceSUI: eventForm.vipPrice,
+        normalPriceSUI: eventForm.normalPrice,
+        vipPriceMIST: vipPriceInMist.toString(),
+        normalPriceMIST: normalPriceInMist.toString()
+      });
       
       // Create event transaction with all fields
       const txb = contractUtils.createEventTransaction({
@@ -1242,62 +1298,168 @@ export default function Profile() {
         termsAndConditions: eventForm.termsAndConditions || ''
       });
       
-      // Sign and execute transaction
-      const result = await wallet.signAndExecuteTransaction({
-        transaction: txb,
+
+      console.log('📝 Transaction block created successfully');
+      console.log('🔄 Attempting to sign and execute transaction...');
+      
+      // Sign and execute transaction with proper options
+      const result = await wallet.signAndExecuteTransactionBlock({
+        transactionBlock: txb,
         options: {
           showEffects: true,
           showEvents: true,
           showObjectChanges: true,
+          showBalanceChanges: true,
+          showInput: false,
         },
+        requestType: 'WaitForLocalExecution',
       });
       
       console.log('Event creation result:', result);
       
-      // Enhanced extraction logic with comprehensive debugging
-      console.log('🔍 FULL TRANSACTION RESULT DEBUG:', {
-        digest: result.digest,
-        effects: result.effects,
-        objectChanges: result.objectChanges,
-        events: result.events,
-        balanceChanges: result.balanceChanges,
-        status: result.effects?.status,
-        fullResult: result
-      });
+      // Handle case where wallet returns encoded data instead of parsed objects
+      let parsedResult = result;
       
-      // Check if transaction was successful - Updated for different wallet response formats
-      const isSuccessful = 
-        result.effects?.status?.status === 'success' ||  // Standard format
-        result.effects?.status === 'success' ||          // Alternative format
-        result.digest;                                    // If digest exists, transaction went through
+      // If effects is a string, we need to parse the transaction ourselves
+      if (typeof result.effects === 'string') {
+        console.log('🔄 Effects returned as string, attempting to fetch parsed transaction...');
         
-      console.log('🔍 Transaction Success Check:', {
-        standardFormat: result.effects?.status?.status === 'success',
-        alternativeFormat: result.effects?.status === 'success',
-        hasDigest: !!result.digest,
-        finalDecision: isSuccessful
-      });
-      
-      if (!isSuccessful) {
-        console.error('❌ Transaction failed:', result.effects?.status);
-        throw new Error(`Transaction failed: ${result.effects?.status?.error || 'Unknown error'}`);
+        try {
+          // Use SuiClient to get the parsed transaction result
+          const suiClient = new SuiClient({ url: getFullnodeUrl('devnet') });
+          const txResult = await suiClient.getTransactionBlock({
+            digest: result.digest,
+            options: {
+              showEffects: true,
+              showEvents: true,
+              showObjectChanges: true,
+              showBalanceChanges: true,
+            },
+          });
+          
+          console.log('✅ Successfully fetched parsed transaction:', txResult);
+          parsedResult = txResult;
+        } catch (parseError) {
+          console.error('❌ Failed to parse transaction:', parseError);
+          throw new Error(`Transaction was executed but couldn't parse results. Transaction digest: ${result.digest}`);
+        }
       }
       
-      // Extract the created object ID from transaction
-      const createdObjectIds = result.objectChanges
-        ?.filter((obj) => obj.type === "created")
-        .map((obj) => obj.objectId);
+      // Enhanced extraction logic with comprehensive debugging
+      console.log('🔍 TRANSACTION STATUS DETAILS:', {
+        hasEffects: !!parsedResult.effects,
+        effectsStatus: parsedResult.effects?.status,
+        statusType: typeof parsedResult.effects?.status,
+        isStatusObject: typeof parsedResult.effects?.status === 'object',
+        statusStatus: parsedResult.effects?.status?.status,
+        rawStatus: parsedResult.effects?.status
+      });
       
-      console.log('🔍 Created object IDs:', createdObjectIds);
+      console.log('🔍 FULL TRANSACTION RESULT DEBUG:', {
+        digest: parsedResult.digest,
+        effects: parsedResult.effects,
+        objectChanges: parsedResult.objectChanges,
+        events: parsedResult.events,
+        balanceChanges: parsedResult.balanceChanges,
+        fullResult: parsedResult
+      });
       
-      if (!createdObjectIds || createdObjectIds.length === 0) {
-        console.error('❌ No objects were created in the transaction');
+      // Check if transaction was successful - handle different response structures
+      const transactionStatus = parsedResult.effects?.status?.status || parsedResult.effects?.status;
+      if (transactionStatus !== 'success') {
+        console.error('❌ Transaction failed:', parsedResult.effects?.status);
+        const errorMessage = parsedResult.effects?.status?.error || 
+                           parsedResult.effects?.status?.toString() || 
+                           'Unknown error';
+        throw new Error(`Transaction failed: ${errorMessage}`);
+      }
+      
+      console.log('✅ Transaction successful! Status:', transactionStatus);
+      
+      // Check if objectChanges exists
+      if (!parsedResult.objectChanges || parsedResult.objectChanges.length === 0) {
+        console.error('❌ No objectChanges in transaction result');
         throw new Error('Transaction succeeded but no objects were created. This might indicate a contract execution issue.');
       }
       
-      // Get the first created object ID (should be the EventData object)
-      const eventObjectId = createdObjectIds[0];
-      console.log('✅ Event object ID extracted:', eventObjectId);
+      // Log all created objects for debugging
+      const allCreatedObjects = parsedResult.objectChanges.filter(change => change.type === 'created');
+      console.log('🔍 ALL CREATED OBJECTS:', allCreatedObjects.map(obj => ({
+        objectId: obj.objectId,
+        objectType: obj.objectType,
+        owner: obj.owner,
+        digest: obj.digest
+      })));
+      
+      // Try multiple methods to extract the event object ID
+      let eventObjectId = null;
+      let extractionMethod = 'unknown';
+      
+      // Method 1: Look for EventData in objectType (case-insensitive)
+      eventObjectId = parsedResult.objectChanges?.find(
+        change => change.type === 'created' && 
+        change.objectType?.toLowerCase().includes('eventdata')
+      )?.objectId;
+      if (eventObjectId) extractionMethod = 'EventData pattern match';
+      
+      // Method 2: Look for full package path with correct module name
+      if (!eventObjectId) {
+        eventObjectId = parsedResult.objectChanges?.find(
+          change => change.type === 'created' && 
+          change.objectType?.includes(`${CONTRACT_CONFIG.packageId}::ticketing::EventData`)
+        )?.objectId;
+        if (eventObjectId) extractionMethod = 'Full package path match';
+      }
+      
+      // Method 3: Look for any object containing our package ID
+      if (!eventObjectId) {
+        const packageObjects = parsedResult.objectChanges?.filter(
+          change => change.type === 'created' && 
+          change.objectType?.includes(CONTRACT_CONFIG.packageId)
+        );
+        console.log('🔍 Objects from our package:', packageObjects);
+        
+        if (packageObjects && packageObjects.length === 1) {
+          eventObjectId = packageObjects[0].objectId;
+          extractionMethod = 'Single package object';
+        } else if (packageObjects && packageObjects.length > 1) {
+          // Multiple objects created - try to find the EventData one
+          const eventObject = packageObjects.find(obj => 
+            obj.objectType?.toLowerCase().includes('event') ||
+            obj.objectType?.toLowerCase().includes('data')
+          );
+          if (eventObject) {
+            eventObjectId = eventObject.objectId;
+            extractionMethod = 'Multiple objects - event pattern';
+          }
+        }
+      }
+      
+      // Method 4: Look for objects created in events (Sui events)
+      if (!eventObjectId && parsedResult.events && parsedResult.events.length > 0) {
+        console.log('🔍 Checking transaction events for object creation:', parsedResult.events);
+        for (const event of parsedResult.events) {
+          if (event.parsedJson && event.parsedJson.event_id) {
+            eventObjectId = event.parsedJson.event_id;
+            extractionMethod = 'Transaction event';
+            break;
+          }
+        }
+      }
+      
+      // Method 5: Fallback - use the first created object if it's the only one
+      if (!eventObjectId && allCreatedObjects.length === 1) {
+        eventObjectId = allCreatedObjects[0].objectId;
+        extractionMethod = 'Single created object fallback';
+        console.log('⚠️ Using fallback method - single created object');
+      }
+      
+      console.log('🔍 EVENT OBJECT EXTRACTION RESULT:', {
+        found: !!eventObjectId,
+        objectId: eventObjectId,
+        method: extractionMethod,
+        totalCreatedObjects: allCreatedObjects.length
+      });
       
       if (eventObjectId) {
         console.log(`✅ Successfully extracted event object ID: ${eventObjectId}`);
@@ -1333,7 +1495,7 @@ export default function Profile() {
           importantNotices: eventForm.importantNotices || '',
           termsAndConditions: eventForm.termsAndConditions || '',
           createdAt: Date.now(),
-          transactionHash: result.digest
+          transactionHash: parsedResult.digest
         };
         localStorage.setItem('dynamic_events', JSON.stringify(dynamicEvents));
         
@@ -1346,7 +1508,7 @@ Event Object ID: ${eventObjectId}
 ✅ The event is now immediately available for ticket purchases!
 ✅ Buyers can now visit: /seat-selection/${nextEventId}
 
-Transaction Hash: ${result.digest}`);
+Transaction Hash: ${parsedResult.digest}`);
         
         // Reset form with all fields
         setEventForm({
@@ -1371,14 +1533,87 @@ Transaction Hash: ${result.digest}`);
           termsAndConditions: ''
         });
       } else {
-        // If no objects were created, this shouldn't happen since we check earlier
-        console.error('❌ No event object ID found');
-        throw new Error('Could not extract event object ID from transaction result. No objects were created.');
+
+        // Enhanced error message with debugging info
+        const debugInfo = {
+          transactionStatus: parsedResult.effects?.status?.status,
+          objectChangesCount: parsedResult.objectChanges?.length || 0,
+          createdObjectsCount: allCreatedObjects.length,
+          allObjectTypes: allCreatedObjects.map(obj => obj.objectType),
+          packageId: CONTRACT_CONFIG.packageId,
+          extractionMethods: [
+            'EventData pattern match',
+            'Full package path match', 
+            'Single package object',
+            'Multiple objects - event pattern',
+            'Transaction event',
+            'Single created object fallback'
+          ]
+        };
+        
+        console.error('❌ EVENT OBJECT EXTRACTION FAILED:', debugInfo);
+        
+        throw new Error(`Could not extract event object ID from transaction result.
+
+DEBUG INFO:
+- Transaction Status: ${debugInfo.transactionStatus}
+- Objects Created: ${debugInfo.createdObjectsCount}
+- Object Types: ${debugInfo.allObjectTypes.join(', ') || 'None'}
+- Package ID: ${debugInfo.packageId}
+
+This usually means:
+1. The contract function didn't create an EventData object
+2. The object type doesn't match expected patterns
+3. Multiple objects were created and we couldn't identify the event
+
+Check browser console for full transaction details.`);
       }
       
     } catch (error) {
-      console.error('Error creating event:', error);
-      alert(`Failed to create event: ${error.message}`);
+      console.error('❌ Error creating event:', error);
+      
+      // Enhanced error analysis
+      const errorAnalysis = {
+        errorType: error.constructor.name,
+        errorMessage: error.message,
+        errorStack: error.stack,
+        hasEffects: !!error.effects,
+        contractPackageId: CONTRACT_CONFIG.packageId,
+        walletConnected: !!wallet?.connected,
+        walletAddress: address
+      };
+      
+      console.error('🔍 DETAILED ERROR ANALYSIS:', errorAnalysis);
+      
+      // Provide specific error messages based on error type
+      let userFriendlyMessage = '';
+      
+      if (error.message.includes('Invalid package ID')) {
+        userFriendlyMessage = `Contract Configuration Error: ${error.message}
+        
+Please check that:
+1. You have the correct deployed contract package ID
+2. The package ID in utils/contract-config.js is correct
+3. The contract has been properly deployed to Sui devnet`;
+      } else if (error.message.includes('function not found') || error.message.includes('module not found')) {
+        userFriendlyMessage = `Smart Contract Error: The function or module was not found.
+        
+This usually means:
+1. The package ID is incorrect (pointing to an object instead of package)
+2. The function name "create_event" doesn't exist in the contract
+3. The module name "ticketing" is incorrect
+        
+Current package ID: ${CONTRACT_CONFIG.packageId}
+Target function: ${CONTRACT_CONFIG.packageId}::ticketing::create_event`;
+      } else if (error.message.includes('Insufficient gas')) {
+        userFriendlyMessage = 'Transaction Error: Insufficient gas or balance to execute the transaction.';
+      } else if (error.message.includes('User rejected')) {
+        userFriendlyMessage = 'Transaction was cancelled by user.';
+      } else {
+        userFriendlyMessage = `Failed to create event: ${error.message}`;
+      }
+      
+      alert(userFriendlyMessage);
     } finally {
       setIsCreatingEvent(false);
     }
@@ -1501,7 +1736,8 @@ Transaction Hash: ${result.digest}`);
               eventForm,
               setEventForm,
               handleCreateEvent,
-              isCreatingEvent
+              isCreatingEvent,
+              router
             )}
           </div>
         </div>
@@ -1543,12 +1779,13 @@ Transaction Hash: ${result.digest}`);
                 <input
                   type="number"
                   step="0.01"
-                  min="0"
-                  max={sellTicket ? (contractUtils.mistToSui(sellTicket.originalPrice) * 1.1).toFixed(2) : undefined}
-                  value={resalePrice}
+                  min={0}
+                  max={sellTicket && !isNaN(contractUtils.mistToSui(sellTicket.originalPrice)) ? (contractUtils.mistToSui(sellTicket.originalPrice) * 1.1) : undefined}
+                  value={resalePrice === null || resalePrice === undefined ? '' : resalePrice}
                   onChange={(e) => setResalePrice(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D84040] focus:border-transparent font-domine"
                   placeholder="Enter resale price"
+                  inputMode="decimal"
                 />
                 <p className="text-xs text-gray-500 font-domine mt-1">
                   Maximum allowed: 110% of original price
