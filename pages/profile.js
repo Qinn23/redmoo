@@ -1014,6 +1014,21 @@ export default function Profile() {
           // Convert purchases to ticket format
           userPurchases.forEach(purchase => {
             purchase.seats.forEach((seat, index) => {
+              // Try to get originalPrice and objectId from seat or purchase
+              let originalPrice = seat.originalPrice || purchase.originalPrice || (seat.price ? (seat.price * 1000000000).toString() : null);
+              let objectId = seat.objectId || purchase.objectId || null;
+              // Fallback: if seatType is VIP, use event VIP price; else use normal price
+              if (!originalPrice) {
+                if (seat.seatType === 1 && purchase.vipPrice) {
+                  originalPrice = (parseFloat(purchase.vipPrice) * 1000000000).toString();
+                } else if (seat.seatType === 2 && purchase.normalPrice) {
+                  originalPrice = (parseFloat(purchase.normalPrice) * 1000000000).toString();
+                }
+              }
+              // Fallback: generate a mock objectId if missing
+              if (!objectId) {
+                objectId = `${purchase.id}-seat-${index}-obj`;
+              }
               purchasedTickets.push({
                 id: `${purchase.id}-seat-${index}`,
                 eventName: purchase.eventName,
@@ -1023,7 +1038,9 @@ export default function Profile() {
                 eventDate: purchase.eventDate,
                 pricePaid: (seat.price * 1000000000).toString(), // Convert SUI to MIST
                 purchaseDate: purchase.purchaseDate,
-                purchaseId: purchase.id
+                purchaseId: purchase.id,
+                originalPrice,
+                objectId
               });
             });
           });
@@ -1098,7 +1115,7 @@ export default function Profile() {
     setSelectedTicket(null);
   };
 
-  const handleSellTicket = (ticket) => {
+  const handleSellTicket = async (ticket) => {
     setSellTicket(ticket);
     setResalePrice('');
     setShowSellModal(true);
@@ -1117,9 +1134,11 @@ export default function Profile() {
     try {
       setIsSelling(true);
 
-      // Convert resale price to MIST
+      // Ensure contract is initialized before creating transaction
+      contractUtils.initializeContract(CONTRACT_CONFIG);
+      // Convert resale price to MIST as BigInt (not string)
       const resalePriceInMist = contractUtils.suiToMist(parseFloat(resalePrice));
-      
+
       // Check price limit (110% of original price)
       const maxResalePrice = contractUtils.mistToSui(sellTicket.originalPrice) * 1.1;
       if (parseFloat(resalePrice) > maxResalePrice) {
@@ -1130,7 +1149,7 @@ export default function Profile() {
       // Create sell transaction
       const sellTx = contractUtils.createSellTicketTransaction({
         ticketObjectId: sellTicket.objectId,
-        resalePrice: resalePriceInMist
+        resalePrice: resalePriceInMist // Pass as BigInt
       });
 
       // Execute transaction
@@ -1630,12 +1649,13 @@ Check browser console for full transaction details.`);
                 <input
                   type="number"
                   step="0.01"
-                  min="0"
-                  max={sellTicket ? (contractUtils.mistToSui(sellTicket.originalPrice) * 1.1).toFixed(2) : undefined}
-                  value={resalePrice}
+                  min={0}
+                  max={sellTicket && !isNaN(contractUtils.mistToSui(sellTicket.originalPrice)) ? (contractUtils.mistToSui(sellTicket.originalPrice) * 1.1) : undefined}
+                  value={resalePrice === null || resalePrice === undefined ? '' : resalePrice}
                   onChange={(e) => setResalePrice(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D84040] focus:border-transparent font-domine"
                   placeholder="Enter resale price"
+                  inputMode="decimal"
                 />
                 <p className="text-xs text-gray-500 font-domine mt-1">
                   Maximum allowed: 110% of original price
