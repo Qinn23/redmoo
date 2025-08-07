@@ -61,9 +61,9 @@ const Home = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [showEvents, setShowEvents] = useState(false);
   const [currentEventIndex, setCurrentEventIndex] = useState(0);
-  const [allEvents, setAllEvents] = useState(sampleEvents); // Combined events state
+  const [allEvents, setAllEvents] = useState([]); // Only dynamic events
 
-  // Load dynamic events from localStorage and merge with sample events
+  // Load dynamic events from localStorage (ignore hardcoded sample events)
   const loadAllEvents = () => {
     try {
       const dynamicEvents = JSON.parse(localStorage.getItem('dynamic_events') || '{}');
@@ -74,16 +74,29 @@ const Home = () => {
         venue: eventData.venue,
         price: `$${eventData.normalPrice}`,
         image: eventData.imageUrl || `https://api.placeholder.com/600x400/D84040/FFFFFF?text=${encodeURIComponent(eventData.name)}`,
-        isDynamic: true // Flag to identify dynamic events
+        isDynamic: true, // Flag to identify dynamic events
+        description: eventData.description,
+        vipPrice: eventData.vipPrice,
+        normalPrice: eventData.normalPrice,
+        eventDateTime: eventData.eventDate,
+        time: eventData.time,
+        closingTime: eventData.closingTime,
+        category: eventData.category,
+        totalVipSeats: eventData.totalVipSeats,
+        totalNormalSeats: eventData.totalNormalSeats
       }));
       
-      // Merge sample events with dynamic events
-      const combined = [...sampleEvents, ...dynamicEventsList];
-      setAllEvents(combined);
-      console.log('🎫 Loaded events:', combined.length, 'total (', dynamicEventsList.length, 'dynamic)');
+      // Only use dynamic events (ignore hardcoded sample events)
+      setAllEvents(dynamicEventsList);
+      console.log('🎫 Loaded dynamic events:', dynamicEventsList.length, 'events created by organizers');
+      
+      // If no dynamic events exist, show a placeholder
+      if (dynamicEventsList.length === 0) {
+        console.log('ℹ️ No dynamic events found. Events will appear here when organizers create them.');
+      }
     } catch (error) {
       console.error('❌ Error loading dynamic events:', error);
-      setAllEvents(sampleEvents); // Fallback to sample events
+      setAllEvents([]); // Empty array if error
     }
   };
 
@@ -118,37 +131,57 @@ const Home = () => {
     <div>
       {/* Event Showcase Carousel (shadcn/ui style) */}
       <div className="flex justify-center items-center mb-8 animate-fade-in-up">
-        <Carousel className="w-full max-w-6xl rounded-2xl overflow-hidden">
-          <CarouselContent>
-            {allEvents.map((event, index) => (
-              <CarouselItem key={event.id} className="p-0 h-full">
-                <Card className="rounded-none border-none bg-transparent shadow-lg h-full">
-                  <CardContent className="flex p-0 aspect-[21/9] relative h-full w-full overflow-hidden">
-                    <img
-                      src={event.image}
-                      alt={event.name}
-                      className="object-cover w-full h-full"
-                      style={{ aspectRatio: '21/6', objectPosition: 'center 30%' }}
-                    />
-                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent pl-12 pr-6 pb-6 pt-6 z-10">
-                      <h2 className="text-2xl md:text-3xl font-bold text-white font-chonburi mb-2">{event.name}</h2>
-                      <div className="text-gray-200 font-domine mb-1">{event.date} &bull; {event.venue}</div>
-                      <div className="text-[#FFD700] font-bold font-domine text-lg">{event.price}</div>
-                      <button
-                        onClick={() => router.push(`/event/${event.id}`)}
-                        className="absolute bottom-6 right-6 bg-[#D84040] text-white px-6 py-2 rounded-full hover:bg-[#A31D1D] font-domine font-medium transition-all shadow-lg z-20"
-                      >
-                        View Details
-                      </button>
-                    </div>
-                  </CardContent>
-                </Card>
-              </CarouselItem>
-            ))}
-          </CarouselContent>
-          <CarouselPrevious className="left-4 top-1/2 -translate-y-1/2 z-20 bg-[#D84040] text-white hover:bg-[#A31D1D]" />
-          <CarouselNext className="right-4 top-1/2 -translate-y-1/2 z-20 bg-[#D84040] text-white hover:bg-[#A31D1D]" />
-        </Carousel>
+        {allEvents.length > 0 ? (
+          <Carousel className="w-full max-w-6xl rounded-2xl overflow-hidden">
+            <CarouselContent>
+              {allEvents.map((event, index) => (
+                <CarouselItem key={event.id} className="p-0 h-full">
+                  <Card className="rounded-none border-none bg-transparent shadow-lg h-full">
+                    <CardContent className="flex p-0 aspect-[21/9] relative h-full w-full overflow-hidden">
+                      <img
+                        src={event.image}
+                        alt={event.name}
+                        className="object-cover w-full h-full"
+                        style={{ aspectRatio: '21/6', objectPosition: 'center 30%' }}
+                      />
+                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent pl-12 pr-6 pb-6 pt-6 z-10">
+                        <h2 className="text-2xl md:text-3xl font-bold text-white font-chonburi mb-2">{event.name}</h2>
+                        <div className="text-gray-200 font-domine mb-1">{event.date} &bull; {event.venue}</div>
+                        <div className="text-[#FFD700] font-bold font-domine text-lg">{event.price}</div>
+                        <button
+                          onClick={() => router.push(`/event/${event.id}`)}
+                          className="absolute bottom-6 right-6 bg-[#D84040] text-white px-6 py-2 rounded-full hover:bg-[#A31D1D] font-domine font-medium transition-all shadow-lg z-20"
+                        >
+                          View Details
+                        </button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <CarouselPrevious className="left-4 top-1/2 -translate-y-1/2 z-20 bg-[#D84040] text-white hover:bg-[#A31D1D]" />
+            <CarouselNext className="right-4 top-1/2 -translate-y-1/2 z-20 bg-[#D84040] text-white hover:bg-[#A31D1D]" />
+          </Carousel>
+        ) : (
+          <div className="w-full max-w-6xl">
+            <Card className="rounded-2xl border-2 border-dashed border-gray-300 shadow-lg">
+              <CardContent className="flex flex-col items-center justify-center p-12 aspect-[21/9] bg-gradient-to-br from-[#F8F2DE] to-[#ECDCBF]">
+                <div className="text-6xl mb-4">🎭</div>
+                <h2 className="text-2xl md:text-3xl font-bold text-[#A31D1D] font-chonburi mb-4">No Events Available</h2>
+                <p className="text-gray-600 font-domine text-center max-w-lg mb-6">
+                  Events created by organizers will appear here. Organizers can create events through their profile dashboard.
+                </p>
+                <button
+                  onClick={() => router.push('/connect-wallet')}
+                  className="bg-[#D84040] text-white px-6 py-3 rounded-full hover:bg-[#A31D1D] font-domine font-medium transition-all shadow-lg"
+                >
+                  Connect as Organizer
+                </button>
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </div>
       {/* Hero Section */}
       <div className="text-center mb-8 animate-fade-in-up">
@@ -171,10 +204,13 @@ const Home = () => {
         <div className="max-w-4xl mx-auto">
           <input
             type="text"
-            placeholder="Search for your favourite event..."
+            placeholder={allEvents.length > 0 ? "Search for your favourite event..." : "No events available to search"}
             value={searchQuery}
             onChange={handleSearch}
-            className="w-full px-6 py-4 rounded-full bg-white text-[#D84040] font-domine focus:outline-none focus:ring-2 focus:ring-[#D84040] focus:ring-opacity-50 placeholder-[#A31D1D] shadow-lg border-2 border-[#D84040]"
+            disabled={allEvents.length === 0}
+            className={`w-full px-6 py-4 rounded-full bg-white text-[#D84040] font-domine focus:outline-none focus:ring-2 focus:ring-[#D84040] focus:ring-opacity-50 placeholder-[#A31D1D] shadow-lg border-2 border-[#D84040] ${
+              allEvents.length === 0 ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
           />
         </div>
       </div>
@@ -183,10 +219,28 @@ const Home = () => {
       {showEvents && (
         <div className="mb-16 animate-fade-in-up" style={{animationDelay: '0.2s'}}>
           <h2 className="text-3xl font-bold text-center text-[#A31D1D] mb-8 font-chonburi">
-            Available Events
+            {allEvents.length > 0 ? 'Available Events' : 'No Events Created Yet'}
           </h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {(() => {
+              if (allEvents.length === 0) {
+                return (
+                  <div className="col-span-full text-center py-16">
+                    <div className="text-6xl mb-4">🎪</div>
+                    <h3 className="text-xl font-bold text-[#A31D1D] font-chonburi mb-2">No Events Available</h3>
+                    <p className="text-gray-600 font-domine mb-6">
+                      Events created by organizers will appear here. Connect as an organizer to start creating events!
+                    </p>
+                    <button
+                      onClick={() => router.push('/connect-wallet')}
+                      className="bg-[#D84040] text-white px-6 py-3 rounded-full hover:bg-[#A31D1D] font-domine font-medium transition-all shadow-lg"
+                    >
+                      Become an Organizer
+                    </button>
+                  </div>
+                );
+              }
+              
               const filteredEvents = allEvents
                 .filter(event =>
                   searchQuery.length === 0 ||
@@ -195,7 +249,7 @@ const Home = () => {
               if (filteredEvents.length === 0) {
                 return (
                   <div className="col-span-full text-center text-gray-500 font-domine text-lg py-8">
-                    No events found.
+                    No events found matching "{searchQuery}".
                   </div>
                 );
               }
