@@ -600,7 +600,7 @@ export default function SeatSelection() {
       const tx = new TransactionBlock();
       tx.setGasBudget(TX_CONFIG.gaseBudget);
 
-      // Get user's SUI coins for payment
+      // Get user's SUI coins for payment (not gas coins)
       const suiClient = new SuiClient({
         url: 'https://fullnode.devnet.sui.io:443'
       });
@@ -614,42 +614,37 @@ export default function SeatSelection() {
       if (coins.data.length === 0) {
         throw new Error('No SUI coins found in wallet');
       }
-
-      console.log('💰 Available coins:', coins.data.map(coin => ({
-        id: coin.coinObjectId,
-        balance: coin.balance,
-        balanceInSui: parseInt(coin.balance) / 1e9
-      })));
       
       // Calculate total amount needed in MIST
       const totalAmountMist = Math.floor(total * 1e9); // Convert SUI to MIST
       
-      // Find a coin with sufficient balance or merge coins if needed
-      let paymentCoin;
-      let sufficientCoin = coins.data.find(coin => parseInt(coin.balance) >= totalAmountMist);
+      // Use the first available coin for payment
+      const paymentCoinId = coins.data[0].coinObjectId;
+      const paymentCoin = tx.object(paymentCoinId);
       
-      if (sufficientCoin) {
-        // Use the coin that has sufficient balance
-        paymentCoin = tx.object(sufficientCoin.coinObjectId);
-        console.log('💳 Using sufficient coin:', sufficientCoin.coinObjectId, 'Balance:', parseInt(sufficientCoin.balance) / 1e9, 'SUI');
-      } else {
-        // Merge multiple coins to get sufficient balance
-        console.log('� No single coin has sufficient balance, merging coins...');
-        const coinObjects = coins.data.map(coin => tx.object(coin.coinObjectId));
-        if (coinObjects.length > 1) {
-          // Merge all coins into the first one
-          tx.mergeCoins(coinObjects[0], coinObjects.slice(1));
-        }
-        paymentCoin = coinObjects[0];
-      }
+      // Calculate individual ticket price for splitting payment
+      const ticketPricePerSeat = total / selectedSeatsList.length;
+      const ticketPriceMistPerSeat = Math.floor(ticketPricePerSeat * 1e9);
       
       // Debug payment amounts
       console.log('💰 Payment Debug:', {
         total: total,
         totalMist: totalAmountMist,
         selectedSeats: selectedSeatsList.length,
-        seatPrices: selectedSeatsList.map(s => ({ id: s.id, price: s.price, type: s.type }))
+        ticketPricePerSeat: ticketPricePerSeat,
+        ticketPriceMistPerSeat: ticketPriceMistPerSeat,
+        seatPrices: selectedSeatsList.map(s => ({ id: s.id, price: s.price, type: s.type })),
+        calculateTotalResult: calculateTotal(),
+        calculateTotalWithFee: calculateTotal() * 1.04,
+        basePrice: parseFloat(event.price.replace('$', '')),
+        expectedContractCharge: selectedSeatsList.map(seat => {
+          const seatPrice = seat.type === 'vip' ? parseFloat(event.price.replace('$', '')) * 1.5 : parseFloat(event.price.replace('$', ''));
+          return seatPrice + (seatPrice * 0.04);
+        })
       });
+      
+      // For now, let's NOT create event data and just use fixed pricing
+      // This will help us isolate if the issue is with event creation or payment processing
       
       // Call the smart contract purchase_ticket function for each seat
       for (const seat of selectedSeatsList) {
@@ -661,14 +656,31 @@ export default function SeatSelection() {
         const contractTotalCost = contractSeatPrice + contractBookingFee;
         const contractTotalCostMist = Math.floor(contractTotalCost * 1e9);
 
-        // Split the exact amount needed for this seat
-        const [seatPaymentCoin] = tx.splitCoins(paymentCoin, [contractTotalCostMist]);
+        // Split the payment coin to get exact amount the contract expects
+        const [seatPaymentCoin] = tx.splitCoins(paymentCoin, [tx.pure(contractTotalCostMist.toString())]);
 
         console.log(`💸 PAYMENT FOR SEAT ${seat.number}:`, {
+          seatPrice: seat.price,
+          seatType: seat.type,
           contractSeatPrice: contractSeatPrice,
           contractBookingFee: contractBookingFee,
           contractTotalCost: contractTotalCost,
-          contractTotalCostMist: contractTotalCostMist
+          contractTotalCostMist: contractTotalCostMist,
+          frontendCalculation: ticketPriceMistPerSeat,
+          difference: contractTotalCostMist - ticketPriceMistPerSeat
+        });
+
+        // Create event data for this specific seat purchase
+        const eventDataCreated = tx.moveCall({
+          target: `${CONTRACT_CONFIG.packageId}::${CONTRACT_CONFIG.module}::create_event`,
+          arguments: [
+            tx.pure(Date.now() + Math.random()), // unique event_id to avoid conflicts
+            tx.pure(Date.parse(event.date)), // event_date as timestamp
+            tx.pure(Math.floor(parseFloat(event.price.replace('$', '')) * 1.5 * 1e9)), // vip_price in MIST 
+            tx.pure(Math.floor(parseFloat(event.price.replace('$', '')) * 1e9)), // normal_price in MIST 
+            tx.pure(20), // total_vip_seats
+            tx.pure(80), // total_normal_seats
+          ],
         });
 
         // Generate metadata URLs (simplified for demo)
@@ -687,16 +699,11 @@ export default function SeatSelection() {
           ]
         }))}`;
 
-        // Purchase ticket using existing event object (created by organizer)
-        const eventObjectId = CONTRACT_CONFIG.eventObjectIds[parseInt(id)];
-        if (!eventObjectId || eventObjectId.includes('event_') && eventObjectId.includes('object_id')) {
-          throw new Error(`Event object ID not configured for event ${id}. Organizer must create the event first.`);
-        }
-        
+        // Now purchase the ticket using the created event data
         tx.moveCall({
           target: `${CONTRACT_CONFIG.packageId}::${CONTRACT_CONFIG.module}::purchase_ticket`,
           arguments: [
-            tx.object(eventObjectId), // Use existing event object created by organizer
+            eventDataCreated, // event_data object reference
             tx.object(CONTRACT_CONFIG.treasuryId), // treasury
             tx.pure(Array.from(new TextEncoder().encode(seat.number))), // seat_id as bytes
             tx.pure(seat.type === 'vip' ? 1 : 2), // seat_type (1 for VIP, 2 for Normal)
