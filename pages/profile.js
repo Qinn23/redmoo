@@ -6,6 +6,7 @@ import QRCode from 'react-qr-code';
 import { SuiClient, getFullnodeUrl } from '@mysten/sui.js/client';
 import { useWalletInfo } from '../wallet/useWallet';
 import * as contractUtils from '../utils/contract-interactions';
+import { CONTRACT_CONFIG } from '../utils/contract-config';
 
 const chonburi = Chonburi({
   variable: "--font-chonburi",
@@ -333,7 +334,7 @@ function TicketDetailsModal({ ticket, isOpen, onClose }) {
   );
 }
 
-const sectionContent = (active, handleLogout, walletInfo, tickets, loadingTickets, showPurchaseSuccess, clearDemoPurchases, onViewDetails, showAccountSelector, wallet, setShowAccountSelector, balanceLoading, getFormattedBalance) => {
+const sectionContent = (active, handleLogout, walletInfo, tickets, loadingTickets, showPurchaseSuccess, clearDemoPurchases, onViewDetails, showAccountSelector, wallet, setShowAccountSelector, balanceLoading, getFormattedBalance, eventForm, setEventForm, handleCreateEvent, isCreatingEvent) => {
   if (active === "mytickets") {
     return (
       <div className="space-y-6">
@@ -442,6 +443,155 @@ const sectionContent = (active, handleLogout, walletInfo, tickets, loadingTicket
     );
   }
   
+  if (active === "organizer") {
+    return (
+      <div className="space-y-6">
+        <h2 className="text-2xl font-bold text-[#A31D1D] font-chonburi">Organizer Dashboard</h2>
+        
+        {/* Event Creation Section */}
+        <div className="bg-gradient-to-r from-[#F8F2DE] to-[#ECDCBF] rounded-lg p-6 border border-[#A31D1D]">
+          <h3 className="text-xl font-bold text-[#A31D1D] font-chonburi mb-4">Create New Event</h3>
+          <div className="bg-white rounded-lg p-4 space-y-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+              <p className="text-blue-800 font-domine text-sm">
+                <strong>Note:</strong> This form only includes fields that are stored on-chain by your current Move contract.
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 font-domine mb-2">Event Date & Time</label>
+                <input
+                  type="datetime-local"
+                  value={eventForm.eventDate}
+                  onChange={(e) => setEventForm({...eventForm, eventDate: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg font-domine focus:outline-none focus:ring-2 focus:ring-[#D84040]"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 font-domine mb-2">VIP Price (SUI)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={eventForm.vipPrice}
+                  onChange={(e) => setEventForm({...eventForm, vipPrice: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg font-domine focus:outline-none focus:ring-2 focus:ring-[#D84040]"
+                  placeholder="25.00"
+                  required
+                />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 font-domine mb-2">Normal Price (SUI)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={eventForm.normalPrice}
+                  onChange={(e) => setEventForm({...eventForm, normalPrice: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg font-domine focus:outline-none focus:ring-2 focus:ring-[#D84040]"
+                  placeholder="15.00"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 font-domine mb-2">VIP Seats</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={eventForm.vipSeats}
+                  onChange={(e) => setEventForm({...eventForm, vipSeats: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg font-domine focus:outline-none focus:ring-2 focus:ring-[#D84040]"
+                  placeholder="100"
+                  required
+                />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 font-domine mb-2">Normal Seats</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={eventForm.normalSeats}
+                  onChange={(e) => setEventForm({...eventForm, normalSeats: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg font-domine focus:outline-none focus:ring-2 focus:ring-[#D84040]"
+                  placeholder="500"
+                  required
+                />
+              </div>
+            </div>
+            
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+              <p className="text-yellow-800 font-domine text-sm">
+                <strong>Fields stored on-chain:</strong> Event Date, VIP Price, Normal Price, VIP Seats, Normal Seats, and auto-generated Event ID.
+              </p>
+            </div>
+            
+            <button
+              className="w-full bg-[#D84040] text-white px-6 py-3 rounded-lg font-domine font-semibold hover:bg-[#A31D1D] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={handleCreateEvent}
+              disabled={isCreatingEvent}
+            >
+              {isCreatingEvent ? 'Creating Event...' : 'Create Event on Blockchain'}
+            </button>
+          </div>
+        </div>
+
+        {/* Current Events Section */}
+        <div className="bg-gray-50 rounded-lg p-6">
+          <h3 className="text-xl font-bold text-[#A31D1D] font-chonburi mb-4">Current Events</h3>
+          <div className="space-y-3">
+            {Object.entries(CONTRACT_CONFIG.eventObjectIds).map(([eventId, objectId]) => (
+              <div key={eventId} className="bg-white rounded-lg p-4 border border-gray-200">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <div className="font-semibold text-gray-800 font-domine">Event #{eventId}</div>
+                    <div className="text-sm text-gray-600 font-mono">{objectId}</div>
+                  </div>
+                  <div className="flex space-x-2">
+                    <button className="px-3 py-1 bg-blue-100 text-blue-700 rounded text-sm font-domine hover:bg-blue-200">
+                      View Details
+                    </button>
+                    <button className="px-3 py-1 bg-green-100 text-green-700 rounded text-sm font-domine hover:bg-green-200">
+                      Withdraw Funds
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          {Object.keys(CONTRACT_CONFIG.eventObjectIds).length === 0 && (
+            <div className="text-center py-8 text-gray-500 font-domine">
+              No events created yet. Create your first event above!
+            </div>
+          )}
+        </div>
+
+        {/* Instructions */}
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <div className="flex items-start">
+            <div className="w-2 h-2 bg-yellow-500 rounded-full mr-3 mt-2"></div>
+            <div>
+              <h4 className="font-semibold text-yellow-800 font-domine">Important Instructions</h4>
+              <p className="text-yellow-700 text-sm font-domine mt-1">
+                When you create an event, you'll receive an event object ID from the blockchain. 
+                You need to update the contract configuration file with this object ID so buyers can purchase tickets.
+                Each event should only be created once by the organizer.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
   if (active === "settings") {
     return (
       <div className="space-y-6">
@@ -522,6 +672,20 @@ export default function Profile() {
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [showTicketModal, setShowTicketModal] = useState(false);
   const [showAccountSelector, setShowAccountSelector] = useState(false);
+  
+  // Organizer event creation state
+  const [eventForm, setEventForm] = useState({
+    name: '',
+    description: '',
+    venue: '',
+    eventDate: '',
+    vipPrice: '',
+    normalPrice: '',
+    vipSeats: '',
+    normalSeats: '',
+    maxTicketsPerWallet: 4
+  });
+  const [isCreatingEvent, setIsCreatingEvent] = useState(false);
 
   // Initialize the SuiClient for blockchain interactions
   const [suiClient] = useState(new SuiClient({ url: getFullnodeUrl('devnet') }));
@@ -613,7 +777,7 @@ export default function Profile() {
         const ownedObjects = await suiClient.getOwnedObjects({
           owner: address,
           filter: {
-            StructType: `${0x0fc2ca8d04ca3335e241aef5d6895d2c1c41d8eac092efaa4580b092e608b13c}::ticket_nft::TicketNFT`
+            StructType: `${0x0fc2ca8d04ca3335e241aef5d6895d2c1c41d8eac092efaa4580b092e608b13c}::ticketing::TicketNFT`
           },
           options: {
             showContent: true,
@@ -745,6 +909,99 @@ export default function Profile() {
     window.location.reload();
   };
   
+  // Handle event creation (organizer only)
+  const handleCreateEvent = async () => {
+    if (!wallet?.connected || !address) {
+      alert('Please connect your wallet first');
+      return;
+    }
+    
+    if (address !== CONTRACT_CONFIG.organizerAddress) {
+      alert('Only the organizer can create events');
+      return;
+    }
+    
+    // Validate form data (only fields that contract actually uses)
+    if (!eventForm.eventDate || !eventForm.vipPrice || !eventForm.normalPrice || 
+        !eventForm.vipSeats || !eventForm.normalSeats) {
+      alert('Please fill in all required fields: Event Date, VIP Price, Normal Price, VIP Seats, and Normal Seats');
+      return;
+    }
+    
+    setIsCreatingEvent(true);
+    
+    try {
+      // Initialize contract utilities
+      contractUtils.initializeContract(CONTRACT_CONFIG);
+      
+      // Convert form data to proper format
+      const eventDateTime = new Date(eventForm.eventDate).getTime();
+      const vipPriceInMist = BigInt(Math.floor(parseFloat(eventForm.vipPrice) * 1_000_000_000));
+      const normalPriceInMist = BigInt(Math.floor(parseFloat(eventForm.normalPrice) * 1_000_000_000));
+      
+      // Create event transaction (only with fields that contract supports)
+      const txb = contractUtils.createEventTransaction({
+        eventDate: eventDateTime,
+        vipPriceInMist: vipPriceInMist,
+        normalPriceInMist: normalPriceInMist,
+        totalVipSeats: parseInt(eventForm.vipSeats),
+        totalNormalSeats: parseInt(eventForm.normalSeats),
+      });
+      
+      // Sign and execute transaction
+      const result = await wallet.signAndExecuteTransactionBlock({
+        transactionBlock: txb,
+        options: {
+          showEffects: true,
+          showEvents: true,
+          showObjectChanges: true,
+        },
+      });
+      
+      console.log('Event creation result:', result);
+      
+      // Extract event object ID from the transaction result
+      const eventObjectId = result.objectChanges?.find(
+        change => change.type === 'created' && change.objectType?.includes('EventData')
+      )?.objectId;
+      
+      if (eventObjectId) {
+        alert(`Event created successfully! 
+
+Event Object ID: ${eventObjectId}
+
+IMPORTANT: Please add this Event Object ID to your contract configuration file (utils/contract-config.js) in the eventObjectIds mapping so buyers can purchase tickets.
+
+Example:
+eventObjectIds: {
+  5: '${eventObjectId}', // New Event
+  ...
+}`);
+        
+        // Reset form (only the fields we actually use)
+        setEventForm({
+          name: '',
+          description: '',
+          venue: '',
+          eventDate: '',
+          vipPrice: '',
+          normalPrice: '',
+          vipSeats: '',
+          normalSeats: '',
+          maxTicketsPerWallet: 4
+        });
+      } else {
+        throw new Error('Could not extract event object ID from transaction result');
+      }
+      
+    } catch (error) {
+      console.error('Error creating event:', error);
+      alert(`Failed to create event: ${error.message}`);
+    } finally {
+      setIsCreatingEvent(false);
+    }
+  };
+  
   const walletInfo = {
     address: address,
     publicKey: account?.publicKey,
@@ -804,6 +1061,20 @@ export default function Profile() {
                 My Tickets
               </div>
             </button>
+            {/* Show Organizer tab only if current wallet is the organizer */}
+            {address === CONTRACT_CONFIG?.organizerAddress && (
+              <button
+                className={`text-left px-4 py-3 rounded-lg font-domine font-medium transition-all ${
+                  active === "organizer" ? "bg-[#D84040] text-white shadow" : "text-[#A31D1D] hover:bg-[#F8F2DE]"
+                }`}
+                onClick={() => setActive("organizer")}
+              >
+                <div className="flex items-center">
+                  <span className="mr-2">🎭</span>
+                  Organizer
+                </div>
+              </button>
+            )}
             <button
               className={`text-left px-4 py-3 rounded-lg font-domine font-medium transition-all ${
                 active === "info" ? "bg-[#D84040] text-white shadow" : "text-[#A31D1D] hover:bg-[#F8F2DE]"
@@ -843,7 +1114,11 @@ export default function Profile() {
               wallet,
               setShowAccountSelector,
               balanceLoading,
-              getFormattedBalance
+              getFormattedBalance,
+              eventForm,
+              setEventForm,
+              handleCreateEvent,
+              isCreatingEvent
             )}
           </div>
         </div>

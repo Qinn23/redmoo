@@ -10,7 +10,7 @@ const WALLET_TRACKER_ID = '0x51093fce63cfb60d284157d9126e6286ab5ac013db114333a52
 export async function createEvent(wallet, eventData) {
     try {
         const tx = await client.executeMoveCall({
-            target: `${CONTRACT_ADDRESS}::ticket_nft::create_event`,
+            target: `${CONTRACT_ADDRESS}::ticketing::create_event`,
             arguments: [
                 eventData.name,
                 eventData.description,
@@ -45,7 +45,7 @@ export async function purchaseTicket(wallet, { eventId, seatId, seatType, price 
         }
 
         const tx = await client.executeMoveCall({
-            target: `${CONTRACT_ADDRESS}::ticket_nft::purchase_ticket`,
+            target: `${CONTRACT_ADDRESS}::ticketing::purchase_ticket`,
             arguments: [
                 eventId,
                 WALLET_TRACKER_ID,
@@ -83,7 +83,7 @@ export async function getUserTickets(walletAddress) {
     try {
         const ownedObjects = await client.getOwnedObjects({
             owner: walletAddress,
-            filter: { StructType: `${CONTRACT_ADDRESS}::ticket_nft::TicketNFT` },
+            filter: { StructType: `${CONTRACT_ADDRESS}::ticketing::TicketNFT` },
             options: { showContent: true }
         });
         return ownedObjects.data;

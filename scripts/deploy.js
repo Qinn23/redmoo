@@ -195,7 +195,7 @@ function createSampleEvent(config) {
   }
 
   try {
-    const moveCallCommand = `sui client call --package ${config.packageId} --module ticket_nft --function create_event --args ${config.objects.organizerCap} "Taylor Swift - The Eras Tour" "Experience the magic of Taylor Swift's The Eras Tour live in concert." "MetLife Stadium" ${Date.now() + 7 * 24 * 60 * 60 * 1000} 225000000000 150000000000 4 50 150 --gas-budget 10000000 --json`;
+    const moveCallCommand = `sui client call --package ${config.packageId} --module ticketing --function create_event --args ${config.objects.organizerCap} "Taylor Swift - The Eras Tour" "Experience the magic of Taylor Swift's The Eras Tour live in concert." "MetLife Stadium" ${Date.now() + 7 * 24 * 60 * 60 * 1000} 225000000000 150000000000 4 50 150 --gas-budget 10000000 --json`;
     
     const result = executeCommand(moveCallCommand, 'create sample event');
     const resultData = JSON.parse(result);

@@ -1,7 +1,25 @@
 // Deployed contract configuration
 export const CONTRACT_CONFIG = {
-  packageId: '0x4ad912fc48a98c3af7b92768cc29373a93e5b4efee9ac4fc33189092eef12411',
-  treasuryId: '0x62e98019c58fc2f0ae5d44f164cb44d274f427350c102d7f22d0ab77e518aff4',
+  packageId: '0xdbaf6b095a5681ec8641547cf0fc4f12518f93c4cb1f2f4dfad63f9759c24a92',
+  treasuryId: '0xad49f57bf16f101542b2e20c799f70af8ad46c92d0495e044469659095094d62',
+  // treasury refers to the account that receives all payments and fees collected from ticket purchases.
+  
+  // Organizer settings
+  organizerAddress: '0xe8b34b4ec5b0a05a7754f474d4c06e22c880f18b1d3617807dd8f09efc85fb2b', // Same as treasury for now
+  
+  // Contract objects
+  objects: {
+    organizerCap: '0x73a4b18916cf9e9c71a4a94f14a9008616f9b15c0c954d9a936c8f5be44eb6e0', 
+    //walletTracker: '0x' + 'wallet_tracker_object_id', // TODO: Update with actual wallet tracker object ID
+  },
+  
+  // Event object IDs (created by organizer) - TODO: Update with actual event object IDs
+  eventObjectIds: {
+    1: '0x' + 'event_1_object_id', // Taylor Swift event object ID
+    2: '0x' + 'event_2_object_id', // Ed Sheeran event object ID  
+    3: '0x' + 'event_3_object_id', // Jay Chou event object ID
+    4: '0x' + 'event_4_object_id', // BIGBANG event object ID
+  },
   network: 'devnet',
   module: 'ticketing'
 };

@@ -67,7 +67,7 @@ export function createPurchaseTicketTransaction(params) {
     imageUrl,
     metadataUrl,
     packageId,
-    moduleId = 'ticket_nft',
+    moduleId = 'ticketing',
     clockObjectId = '0x6' // Sui Clock object
   } = params;
   
@@ -88,7 +88,7 @@ export function createPurchaseTicketTransaction(params) {
 
   // Call the purchase_ticket function
   tx.moveCall({
-    target: `${CONTRACT_CONFIG.packageId}::ticket_nft::purchase_ticket`,
+    target: `${CONTRACT_CONFIG.packageId}::ticketing::purchase_ticket`,
     arguments: [
       tx.object(eventObjectId),
       tx.object(CONTRACT_CONFIG.objects.walletTracker),
@@ -126,19 +126,18 @@ export function createEventTransaction(params) {
 
   const tx = new TransactionBlock();
 
+  // Generate a simple event ID based on timestamp
+  const eventId = Date.now();
+
   tx.moveCall({
-    target: `${CONTRACT_CONFIG.packageId}::ticket_nft::create_event`,
+    target: `${CONTRACT_CONFIG.packageId}::ticketing::create_event`,
     arguments: [
-      tx.object(CONTRACT_CONFIG.objects.organizerCap),
-      tx.pure(name),
-      tx.pure(description),
-      tx.pure(venue),
-      tx.pure(eventDate),
-      tx.pure(vipPriceInMist),
-      tx.pure(normalPriceInMist),
-      tx.pure(maxTicketsPerWallet),
-      tx.pure(totalVipSeats),
-      tx.pure(totalNormalSeats),
+      tx.pure(eventId), // event_id: u64
+      tx.pure(eventDate), // event_date: u64
+      tx.pure(vipPriceInMist.toString()), // vip_price: u64
+      tx.pure(normalPriceInMist.toString()), // normal_price: u64
+      tx.pure(totalVipSeats), // total_vip_seats: u64
+      tx.pure(totalNormalSeats), // total_normal_seats: u64
     ],
   });
 
@@ -156,7 +155,7 @@ export function createWithdrawFundsTransaction(eventObjectId, amountInMist) {
   const tx = new TransactionBlock();
 
   tx.moveCall({
-    target: `${CONTRACT_CONFIG.packageId}::ticket_nft::withdraw_funds`,
+    target: `${CONTRACT_CONFIG.packageId}::ticketing::withdraw_funds`,
     arguments: [
       tx.object(CONTRACT_CONFIG.objects.organizerCap),
       tx.object(eventObjectId),
@@ -178,7 +177,7 @@ export function createToggleEventStatusTransaction(eventObjectId) {
   const tx = new TransactionBlock();
 
   tx.moveCall({
-    target: `${CONTRACT_CONFIG.packageId}::ticket_nft::toggle_event_status`,
+    target: `${CONTRACT_CONFIG.packageId}::ticketing::toggle_event_status`,
     arguments: [
       tx.object(CONTRACT_CONFIG.objects.organizerCap),
       tx.object(eventObjectId),
@@ -276,7 +275,7 @@ export async function getUserTickets(suiClient, ownerAddress) {
     const ownedObjects = await suiClient.getOwnedObjects({
       owner: ownerAddress,
       filter: {
-        StructType: `${CONTRACT_CONFIG.packageId}::ticket_nft::TicketNFT`,
+        StructType: `${CONTRACT_CONFIG.packageId}::ticketing::TicketNFT`,
       },
       options: {
         showContent: true,

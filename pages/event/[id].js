@@ -152,7 +152,7 @@ export default function EventDetail() {
       
       const tx = await client.executeMoveCall({
         packageObjectId: '0x672e410f0439903559fa15397fb6bc81d63d1a0bd860a21b064be41862e9bb53',
-        module: 'ticket_nft',
+        module: 'ticketing',
         function: 'purchase_ticket',
         arguments: [
           '0x51093fce63cfb60d284157d9126e6286ab5ac013db114333a52b0190f8003b19',
