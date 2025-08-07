@@ -334,7 +334,7 @@ function TicketDetailsModal({ ticket, isOpen, onClose }) {
   );
 }
 
-const sectionContent = (active, handleLogout, walletInfo, tickets, loadingTickets, showPurchaseSuccess, clearDemoPurchases, onViewDetails, showAccountSelector, wallet, setShowAccountSelector, balanceLoading, getFormattedBalance, eventForm, setEventForm, handleCreateEvent, isCreatingEvent) => {
+const sectionContent = (active, handleLogout, walletInfo, tickets, loadingTickets, showPurchaseSuccess, clearDemoPurchases, onViewDetails, showAccountSelector, wallet, setShowAccountSelector, balanceLoading, getFormattedBalance, eventForm, setEventForm, handleCreateEvent, isCreatingEvent, router) => {
   if (active === "mytickets") {
     return (
       <div className="space-y-6">
@@ -726,27 +726,44 @@ const sectionContent = (active, handleLogout, walletInfo, tickets, loadingTicket
         <div className="bg-gray-50 rounded-lg p-6">
           <h3 className="text-xl font-bold text-[#A31D1D] font-chonburi mb-4">Current Events</h3>
           <div className="space-y-3">
-            {Object.entries(CONTRACT_CONFIG.eventObjectIds).map(([eventId, objectId]) => (
-              <div key={eventId} className="bg-white rounded-lg p-4 border border-gray-200">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <div className="font-semibold text-gray-800 font-domine">Event #{eventId}</div>
-                    <div className="text-sm text-gray-600 font-mono">{objectId}</div>
+            {/* Show dynamic events from localStorage */}
+            {(() => {
+              try {
+                const dynamicEvents = JSON.parse(localStorage.getItem('dynamic_events') || '{}');
+                return Object.entries(dynamicEvents).map(([eventId, eventData]) => (
+                  <div key={`dynamic-${eventId}`} className="bg-white rounded-lg p-4 border border-gray-200 border-l-4 border-l-green-500">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <div className="font-semibold text-gray-800 font-domine">
+                          {eventData.name} <span className="text-sm text-green-600">(Event #{eventId})</span>
+                        </div>
+                        <div className="text-sm text-gray-600 font-domine mb-1">
+                          {eventData.venue} • {new Date(eventData.eventDate).toLocaleDateString()} • {eventData.time}
+                        </div>
+                        <div className="text-xs text-gray-500 font-mono">{eventData.objectId}</div>
+                      </div>
+                      <div className="flex space-x-2">
+                        <button 
+                          onClick={() => router.push(`/event/${eventId}`)}
+                          className="px-3 py-1 bg-blue-100 text-blue-700 rounded text-sm font-domine hover:bg-blue-200"
+                        >
+                          View Details
+                        </button>
+                        <button className="px-3 py-1 bg-green-100 text-green-700 rounded text-sm font-domine hover:bg-green-200">
+                          Withdraw Funds
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex space-x-2">
-                    <button className="px-3 py-1 bg-blue-100 text-blue-700 rounded text-sm font-domine hover:bg-blue-200">
-                      View Details
-                    </button>
-                    <button className="px-3 py-1 bg-green-100 text-green-700 rounded text-sm font-domine hover:bg-green-200">
-                      Withdraw Funds
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
+                ));
+              } catch (error) {
+                console.error('Error loading dynamic events:', error);
+                return null;
+              }
+            })()}
           </div>
           
-          {Object.keys(CONTRACT_CONFIG.eventObjectIds).length === 0 && (
+          {Object.keys(JSON.parse(localStorage.getItem('dynamic_events') || '{}')).length === 0 && (
             <div className="text-center py-8 text-gray-500 font-domine">
               No events created yet. Create your first event above!
             </div>
@@ -1122,6 +1139,19 @@ export default function Profile() {
     setIsCreatingEvent(true);
     
     try {
+      // Validate contract configuration first
+      if (!CONTRACT_CONFIG.packageId) {
+        throw new Error('Contract package ID not configured. Please check CONTRACT_CONFIG.packageId in utils/contract-config.js');
+      }
+      
+      // Check if packageId looks like a valid package address
+      if (!CONTRACT_CONFIG.packageId.startsWith('0x') || CONTRACT_CONFIG.packageId.length !== 66) {
+        throw new Error(`Invalid package ID format: ${CONTRACT_CONFIG.packageId}. Package ID should be a 66-character hex string starting with 0x.`);
+      }
+      
+      console.log('📋 Using contract package ID:', CONTRACT_CONFIG.packageId);
+      console.log('🏗️ Target function:', `${CONTRACT_CONFIG.packageId}::ticketing::create_event`);
+      
       // Initialize contract utilities
       contractUtils.initializeContract(CONTRACT_CONFIG);
       
@@ -1129,6 +1159,13 @@ export default function Profile() {
       const eventDateTime = new Date(eventForm.eventDate).getTime();
       const vipPriceInMist = BigInt(Math.floor(parseFloat(eventForm.vipPrice) * 1_000_000_000));
       const normalPriceInMist = BigInt(Math.floor(parseFloat(eventForm.normalPrice) * 1_000_000_000));
+      
+      console.log('💰 Price conversion:', {
+        vipPriceSUI: eventForm.vipPrice,
+        normalPriceSUI: eventForm.normalPrice,
+        vipPriceMIST: vipPriceInMist.toString(),
+        normalPriceMIST: normalPriceInMist.toString()
+      });
       
       // Create event transaction with all fields
       const txb = contractUtils.createEventTransaction({
@@ -1153,42 +1190,91 @@ export default function Profile() {
         termsAndConditions: eventForm.termsAndConditions || ''
       });
       
-      // Sign and execute transaction
+      console.log('📝 Transaction block created successfully');
+      console.log('🔄 Attempting to sign and execute transaction...');
+      
+      // Sign and execute transaction with proper options
       const result = await wallet.signAndExecuteTransactionBlock({
         transactionBlock: txb,
         options: {
           showEffects: true,
           showEvents: true,
           showObjectChanges: true,
+          showBalanceChanges: true,
+          showInput: false,
         },
+        requestType: 'WaitForLocalExecution',
       });
       
       console.log('Event creation result:', result);
       
-      // Enhanced extraction logic with comprehensive debugging
-      console.log('🔍 FULL TRANSACTION RESULT DEBUG:', {
-        digest: result.digest,
-        effects: result.effects,
-        objectChanges: result.objectChanges,
-        events: result.events,
-        balanceChanges: result.balanceChanges,
-        fullResult: result
-      });
+      // Handle case where wallet returns encoded data instead of parsed objects
+      let parsedResult = result;
       
-      // Check if transaction was successful
-      if (result.effects?.status?.status !== 'success') {
-        console.error('❌ Transaction failed:', result.effects?.status);
-        throw new Error(`Transaction failed: ${result.effects?.status?.error || 'Unknown error'}`);
+      // If effects is a string, we need to parse the transaction ourselves
+      if (typeof result.effects === 'string') {
+        console.log('🔄 Effects returned as string, attempting to fetch parsed transaction...');
+        
+        try {
+          // Use SuiClient to get the parsed transaction result
+          const suiClient = new SuiClient({ url: getFullnodeUrl('devnet') });
+          const txResult = await suiClient.getTransactionBlock({
+            digest: result.digest,
+            options: {
+              showEffects: true,
+              showEvents: true,
+              showObjectChanges: true,
+              showBalanceChanges: true,
+            },
+          });
+          
+          console.log('✅ Successfully fetched parsed transaction:', txResult);
+          parsedResult = txResult;
+        } catch (parseError) {
+          console.error('❌ Failed to parse transaction:', parseError);
+          throw new Error(`Transaction was executed but couldn't parse results. Transaction digest: ${result.digest}`);
+        }
       }
       
+      // Enhanced extraction logic with comprehensive debugging
+      console.log('🔍 TRANSACTION STATUS DETAILS:', {
+        hasEffects: !!parsedResult.effects,
+        effectsStatus: parsedResult.effects?.status,
+        statusType: typeof parsedResult.effects?.status,
+        isStatusObject: typeof parsedResult.effects?.status === 'object',
+        statusStatus: parsedResult.effects?.status?.status,
+        rawStatus: parsedResult.effects?.status
+      });
+      
+      console.log('🔍 FULL TRANSACTION RESULT DEBUG:', {
+        digest: parsedResult.digest,
+        effects: parsedResult.effects,
+        objectChanges: parsedResult.objectChanges,
+        events: parsedResult.events,
+        balanceChanges: parsedResult.balanceChanges,
+        fullResult: parsedResult
+      });
+      
+      // Check if transaction was successful - handle different response structures
+      const transactionStatus = parsedResult.effects?.status?.status || parsedResult.effects?.status;
+      if (transactionStatus !== 'success') {
+        console.error('❌ Transaction failed:', parsedResult.effects?.status);
+        const errorMessage = parsedResult.effects?.status?.error || 
+                           parsedResult.effects?.status?.toString() || 
+                           'Unknown error';
+        throw new Error(`Transaction failed: ${errorMessage}`);
+      }
+      
+      console.log('✅ Transaction successful! Status:', transactionStatus);
+      
       // Check if objectChanges exists
-      if (!result.objectChanges || result.objectChanges.length === 0) {
+      if (!parsedResult.objectChanges || parsedResult.objectChanges.length === 0) {
         console.error('❌ No objectChanges in transaction result');
         throw new Error('Transaction succeeded but no objects were created. This might indicate a contract execution issue.');
       }
       
       // Log all created objects for debugging
-      const allCreatedObjects = result.objectChanges.filter(change => change.type === 'created');
+      const allCreatedObjects = parsedResult.objectChanges.filter(change => change.type === 'created');
       console.log('🔍 ALL CREATED OBJECTS:', allCreatedObjects.map(obj => ({
         objectId: obj.objectId,
         objectType: obj.objectType,
@@ -1201,7 +1287,7 @@ export default function Profile() {
       let extractionMethod = 'unknown';
       
       // Method 1: Look for EventData in objectType (case-insensitive)
-      eventObjectId = result.objectChanges?.find(
+      eventObjectId = parsedResult.objectChanges?.find(
         change => change.type === 'created' && 
         change.objectType?.toLowerCase().includes('eventdata')
       )?.objectId;
@@ -1209,7 +1295,7 @@ export default function Profile() {
       
       // Method 2: Look for full package path with correct module name
       if (!eventObjectId) {
-        eventObjectId = result.objectChanges?.find(
+        eventObjectId = parsedResult.objectChanges?.find(
           change => change.type === 'created' && 
           change.objectType?.includes(`${CONTRACT_CONFIG.packageId}::ticketing::EventData`)
         )?.objectId;
@@ -1218,7 +1304,7 @@ export default function Profile() {
       
       // Method 3: Look for any object containing our package ID
       if (!eventObjectId) {
-        const packageObjects = result.objectChanges?.filter(
+        const packageObjects = parsedResult.objectChanges?.filter(
           change => change.type === 'created' && 
           change.objectType?.includes(CONTRACT_CONFIG.packageId)
         );
@@ -1241,9 +1327,9 @@ export default function Profile() {
       }
       
       // Method 4: Look for objects created in events (Sui events)
-      if (!eventObjectId && result.events && result.events.length > 0) {
-        console.log('🔍 Checking transaction events for object creation:', result.events);
-        for (const event of result.events) {
+      if (!eventObjectId && parsedResult.events && parsedResult.events.length > 0) {
+        console.log('🔍 Checking transaction events for object creation:', parsedResult.events);
+        for (const event of parsedResult.events) {
           if (event.parsedJson && event.parsedJson.event_id) {
             eventObjectId = event.parsedJson.event_id;
             extractionMethod = 'Transaction event';
@@ -1300,7 +1386,7 @@ export default function Profile() {
           importantNotices: eventForm.importantNotices || '',
           termsAndConditions: eventForm.termsAndConditions || '',
           createdAt: Date.now(),
-          transactionHash: result.digest
+          transactionHash: parsedResult.digest
         };
         localStorage.setItem('dynamic_events', JSON.stringify(dynamicEvents));
         
@@ -1314,7 +1400,7 @@ Extraction Method: ${extractionMethod}
 ✅ The event is now immediately available for ticket purchases!
 ✅ Buyers can now visit: /seat-selection/${nextEventId}
 
-Transaction Hash: ${result.digest}`);
+Transaction Hash: ${parsedResult.digest}`);
         
         // Reset form with all fields
         setEventForm({
@@ -1341,8 +1427,8 @@ Transaction Hash: ${result.digest}`);
       } else {
         // Enhanced error message with debugging info
         const debugInfo = {
-          transactionStatus: result.effects?.status?.status,
-          objectChangesCount: result.objectChanges?.length || 0,
+          transactionStatus: parsedResult.effects?.status?.status,
+          objectChangesCount: parsedResult.objectChanges?.length || 0,
           createdObjectsCount: allCreatedObjects.length,
           allObjectTypes: allCreatedObjects.map(obj => obj.objectType),
           packageId: CONTRACT_CONFIG.packageId,
@@ -1375,8 +1461,50 @@ Check browser console for full transaction details.`);
       }
       
     } catch (error) {
-      console.error('Error creating event:', error);
-      alert(`Failed to create event: ${error.message}`);
+      console.error('❌ Error creating event:', error);
+      
+      // Enhanced error analysis
+      const errorAnalysis = {
+        errorType: error.constructor.name,
+        errorMessage: error.message,
+        errorStack: error.stack,
+        hasEffects: !!error.effects,
+        contractPackageId: CONTRACT_CONFIG.packageId,
+        walletConnected: !!wallet?.connected,
+        walletAddress: address
+      };
+      
+      console.error('🔍 DETAILED ERROR ANALYSIS:', errorAnalysis);
+      
+      // Provide specific error messages based on error type
+      let userFriendlyMessage = '';
+      
+      if (error.message.includes('Invalid package ID')) {
+        userFriendlyMessage = `Contract Configuration Error: ${error.message}
+        
+Please check that:
+1. You have the correct deployed contract package ID
+2. The package ID in utils/contract-config.js is correct
+3. The contract has been properly deployed to Sui devnet`;
+      } else if (error.message.includes('function not found') || error.message.includes('module not found')) {
+        userFriendlyMessage = `Smart Contract Error: The function or module was not found.
+        
+This usually means:
+1. The package ID is incorrect (pointing to an object instead of package)
+2. The function name "create_event" doesn't exist in the contract
+3. The module name "ticketing" is incorrect
+        
+Current package ID: ${CONTRACT_CONFIG.packageId}
+Target function: ${CONTRACT_CONFIG.packageId}::ticketing::create_event`;
+      } else if (error.message.includes('Insufficient gas')) {
+        userFriendlyMessage = 'Transaction Error: Insufficient gas or balance to execute the transaction.';
+      } else if (error.message.includes('User rejected')) {
+        userFriendlyMessage = 'Transaction was cancelled by user.';
+      } else {
+        userFriendlyMessage = `Failed to create event: ${error.message}`;
+      }
+      
+      alert(userFriendlyMessage);
     } finally {
       setIsCreatingEvent(false);
     }
@@ -1498,7 +1626,8 @@ Check browser console for full transaction details.`);
               eventForm,
               setEventForm,
               handleCreateEvent,
-              isCreatingEvent
+              isCreatingEvent,
+              router
             )}
           </div>
         </div>
