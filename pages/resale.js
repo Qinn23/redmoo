@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { useWallet } from '@suiet/wallet-kit';
 import { getEnhancedTicketInfo, loadContractConfig } from "../utils/contract-interactions";
@@ -17,61 +17,57 @@ export default function BuyResale() {
   const [resaleTickets, setResaleTickets] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadResaleTickets();
-  }, []);
 
-  const loadResaleTickets = async () => {
+  useEffect(() => {
+    if (wallet.connected && wallet.account?.address) {
+      loadUserTickets(wallet.account.address);
+    } else {
+      setResaleTickets([]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wallet.connected, wallet.account?.address]);
+
+
+  // Fetch user's ticket NFTs from the blockchain
+  const loadUserTickets = async (walletAddress) => {
     try {
       setLoading(true);
-      
-      // Load contract configuration
       await loadContractConfig();
-      
-      // Initialize Sui client
-      const suiClient = new SuiClient({ 
-        url: process.env.NEXT_PUBLIC_SUI_NETWORK || 'https://fullnode.devnet.sui.io:443' 
+      const suiClient = new SuiClient({
+        url: process.env.NEXT_PUBLIC_SUI_NETWORK || 'https://fullnode.devnet.sui.io:443'
       });
 
-      // In a real implementation, you would:
-      // 1. Query all Ticket objects that have for_sale = true
-      // 2. Get their details and associated event information
-      // For now, we'll use sample data since we need to implement ticket querying
-      
-      // This is a placeholder - in reality you'd query the blockchain for tickets with for_sale = true
-      const mockResaleTickets = [
-        {
-          id: 'ticket_1',
-          ticketObjectId: '0x1234567890abcdef',
-          eventName: 'Taylor Swift Concert',
-          eventDate: '2024-12-15',
-          venue: 'Madison Square Garden',
-          seat: 'Section A, Row 3, Seat 15',
-          seatType: 1, // VIP
-          originalPrice: 150,
-          resalePrice: 165, // 110% of original
-          seller: '0x1234...abcd',
-          forSale: true
-        },
-        {
-          id: 'ticket_2', 
-          ticketObjectId: '0xabcdef1234567890',
-          eventName: 'NFL Championship',
-          eventDate: '2024-11-28',
-          venue: 'MetLife Stadium',
-          seat: 'Section 200, Row 10, Seat 5',
-          seatType: 2, // Normal
-          originalPrice: 75,
-          resalePrice: 82, // 109% of original
-          seller: '0x5678...efgh',
-          forSale: true
-        }
-      ];
+  // Use the actual ticket NFT type from the Move contract
+  const TICKET_TYPE = '0xe8c72bb82abf408049d1d0dbc664bfb96175cab514990c9b44a5334d8ad542c8::ticketing::Ticket';
 
-      setResaleTickets(mockResaleTickets);
-      
+      // Fetch all objects owned by the user of the ticket type
+      const objects = await suiClient.getOwnedObjects({
+        owner: walletAddress,
+        filter: { StructType: TICKET_TYPE },
+        options: { showType: true, showContent: true }
+      });
+
+      // Map to your UI format (customize as needed)
+      const userTickets = objects.data.map((obj, idx) => {
+        const content = obj.data.content?.fields || {};
+        return {
+          id: obj.data.objectId,
+          ticketObjectId: obj.data.objectId,
+          eventName: content.event_name || 'Unknown Event',
+          eventDate: content.event_date || '',
+          venue: content.venue || '',
+          seat: content.seat || '',
+          seatType: content.seat_type || 2,
+          originalPrice: content.original_price || 0,
+          resalePrice: content.original_price || 0,
+          seller: walletAddress,
+          forSale: false // You may want to check if it's already listed
+        };
+      });
+      setResaleTickets(userTickets);
     } catch (error) {
-      console.error('Error loading resale tickets:', error);
+      console.error('Error loading user tickets:', error);
+      setResaleTickets([]);
     } finally {
       setLoading(false);
     }

@@ -1,3 +1,28 @@
+// Migration: Ensure all demo tickets in localStorage have a unique objectId
+function migrateDemoTicketsObjectIds() {
+  const demoPurchases = JSON.parse(localStorage.getItem('demo_purchases') || '[]');
+  let changed = false;
+  function generateValidSuiObjectId() {
+    const randomHex = Array.from({length: 64}, () =>
+      Math.floor(Math.random() * 16).toString(16)
+    ).join('');
+    return `0x${randomHex}`;
+  }
+  for (const purchase of demoPurchases) {
+    if (Array.isArray(purchase.seats)) {
+      for (const seat of purchase.seats) {
+        if (!seat.objectId) {
+          seat.objectId = generateValidSuiObjectId();
+          changed = true;
+        }
+      }
+    }
+  }
+  if (changed) {
+    localStorage.setItem('demo_purchases', JSON.stringify(demoPurchases));
+  }
+}
+
 import React from "react";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
@@ -915,6 +940,10 @@ function isValidSuiObjectId(objectId) {
 }
 
 export default function Profile() {
+  // Run migration on mount to ensure all demo tickets have objectIds
+  useEffect(() => {
+    migrateDemoTicketsObjectIds();
+  }, []);
   const router = useRouter();
   
   // All state variables declared at the top
@@ -1442,10 +1471,70 @@ export default function Profile() {
       const maxResalePrice = contractUtils.mistToSui(sellTicket.originalPrice) * 1.1;
       if (parseFloat(resalePrice) > maxResalePrice) {
         alert(`Resale price cannot exceed ${maxResalePrice.toFixed(2)} SUI (110% of original price)`);
+        setIsSelling(false);
         return;
       }
 
-      // Create sell transaction
+      // Try to fetch ticket on-chain
+      let ticketObj;
+      try {
+        ticketObj = await suiClient.getObject({
+          id: sellTicket.objectId,
+          options: { showType: true, showContent: true, showOwner: true }
+        });
+      } catch (err) {
+        ticketObj = null;
+      }
+
+      if (!ticketObj || !ticketObj.data) {
+        // Demo ticket: update localStorage and UI only
+        // Mark only the correct seat (by objectId) as forSale
+        const demoPurchases = JSON.parse(localStorage.getItem('demo_purchases') || '[]');
+        let updated = false;
+        for (const purchase of demoPurchases) {
+          if (Array.isArray(purchase.seats)) {
+            for (const seat of purchase.seats) {
+              if (seat.objectId === sellTicket.objectId) {
+                seat.forSale = true;
+                seat.resalePrice = resalePrice;
+                updated = true;
+              }
+            }
+          }
+        }
+        if (updated) {
+          localStorage.setItem('demo_purchases', JSON.stringify(demoPurchases));
+          setTickets(prevTickets =>
+            prevTickets.map(ticket =>
+              ticket.objectId === sellTicket.objectId
+                ? { ...ticket, forSale: true, resalePrice }
+                : ticket
+            )
+          );
+          alert(`Demo ticket listed for sale at ${resalePrice} SUI!`);
+          handleCloseSellModal();
+        } else {
+          alert('Demo ticket not found in localStorage.');
+        }
+        setIsSelling(false);
+        return;
+      }
+
+      // Check owner
+      if (ticketObj.data.owner?.AddressOwner?.toLowerCase() !== address?.toLowerCase()) {
+        alert('You do not own this ticket.');
+        setIsSelling(false);
+        return;
+      }
+      // Check for_sale status
+      const fields = ticketObj.data.content?.fields;
+      if (fields?.for_sale) {
+        alert('This ticket is already listed for sale.');
+        setIsSelling(false);
+        return;
+      }
+
+      // Create sell transaction for real on-chain ticket
       const sellTx = contractUtils.createSellTicketTransaction({
         ticketObjectId: sellTicket.objectId,
         resalePrice: resalePriceInMist // Pass as BigInt
@@ -1467,9 +1556,9 @@ export default function Profile() {
 
       if (result.digest) {
         // Update ticket in local state
-        setTickets(prevTickets => 
-          prevTickets.map(ticket => 
-            ticket.id === sellTicket.id 
+        setTickets(prevTickets =>
+          prevTickets.map(ticket =>
+            ticket.id === sellTicket.id
               ? { ...ticket, forSale: true, resalePrice: resalePriceInMist }
               : ticket
           )

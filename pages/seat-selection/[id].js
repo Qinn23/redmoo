@@ -918,6 +918,14 @@ export default function SeatSelection() {
       });
       
       // Save purchase to local storage for UI tracking (with real transaction data)
+      // Helper to generate a valid Sui objectId
+      function generateValidSuiObjectId() {
+        const randomHex = Array.from({length: 64}, () =>
+          Math.floor(Math.random() * 16).toString(16)
+        ).join('');
+        return `0x${randomHex}`;
+      }
+
       const ticketData = {
         eventId: event.id,
         eventName: event.name,
@@ -926,7 +934,8 @@ export default function SeatSelection() {
         seats: selectedSeatsList.map(seat => ({
           seatId: seat.number,
           type: seat.type,
-          price: seat.price
+          price: seat.price,
+          objectId: generateValidSuiObjectId() // Always assign a unique objectId
         })),
         totalPrice: total,
         pricePaid: totalAmountMist, // Store in MIST for consistency
