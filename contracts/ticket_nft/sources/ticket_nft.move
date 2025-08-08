@@ -12,6 +12,7 @@ use sui::balance;
 use sui::object;
 use sui::tx_context;
 use sui::table;
+use sui::event;
 
 /// Constants
 const MAX_TICKETS_PER_USER: u8 = 4;
@@ -19,6 +20,7 @@ const MAX_RESELL_TIMES: u8 = 5;
 const BOOKING_FEE_PERCENT: u64 = 4;
 const RESELL_FEE_PERCENT: u64 = 10; 
 const MAX_RESELL_PRICE_PERCENT: u64 = 110;
+const SUI_TO_MIST: u64 = 1_000_000_000; // 1 SUI = 1,000,000,000 MIST
 
 /// Error codes
 const E_NOT_ORGANIZER: u64 = 1;
@@ -93,6 +95,14 @@ public struct Treasury has key {
     organizer: address,
 }
 
+/// Withdrawal event for tracking organizer withdrawals
+public struct WithdrawalEvent has copy, drop {
+    organizer: address,
+    amount: u64,
+    timestamp: u64,
+    remaining_balance: u64,
+}
+
 /// Initialize the module - creates treasury and wallet tracker
 fun init(ctx: &mut TxContext) {
     let treasury = Treasury {
@@ -110,6 +120,18 @@ fun init(ctx: &mut TxContext) {
         user_purchase_counts: table::new(ctx),
     };
     transfer::share_object(wallet_tracker);
+}
+
+/// Helper function: Convert SUI amount to MIST
+/// Note: Pass whole SUI amounts (e.g., 15 for 15 SUI, 25 for 25 SUI)
+/// For fractional amounts, frontend should handle conversion
+public fun sui_to_mist(sui_amount: u64): u64 {
+    sui_amount * SUI_TO_MIST
+}
+
+/// Helper function: Convert MIST amount to SUI (for display purposes)
+public fun mist_to_sui(mist_amount: u64): u64 {
+    mist_amount / SUI_TO_MIST
 }
 
 /// Create a new event
@@ -265,10 +287,24 @@ public entry fun sell_ticket(
     transfer::transfer(resale_ticket, seller);
 }
 
+/// List ticket for resale (accepts SUI amount, converts to MIST internally)
+public entry fun sell_ticket_sui(
+    ticket: Ticket,
+    resale_price_sui: u64, // Amount in SUI (e.g., 15 for 15 SUI)
+    ctx: &mut TxContext
+) {
+    // Convert SUI to MIST
+    let resale_price_mist = sui_to_mist(resale_price_sui);
+    
+    // Call the main sell_ticket function with MIST amount
+    sell_ticket(ticket, resale_price_mist, ctx);
+}
+
 /// Purchase resale ticket
 public entry fun purchase_resale_ticket(
     ticket: Ticket,
     treasury: &mut Treasury,
+    seller: address,
     payment: Coin<SUI>,
     ctx: &mut TxContext
 ) {
@@ -280,7 +316,7 @@ public entry fun purchase_resale_ticket(
     // Check payment amount
     assert!(coin::value(&payment) >= ticket.resale_price, E_INSUFFICIENT_PAYMENT);
     
-    // Calculate fees (10% to organizer, 90% to current owner)
+    // Calculate fees (10% to organizer, 90% to seller)
     let organizer_fee = (ticket.resale_price * 10) / 100;
     
     // Split payment for organizer fee
@@ -291,11 +327,9 @@ public entry fun purchase_resale_ticket(
     let organizer_fee_balance = coin::into_balance(organizer_fee_coin);
     balance::join(&mut treasury.balance, organizer_fee_balance);
     
-    // The remaining payment should go to the seller
-    // Note: In a production system, you'd implement an escrow mechanism
-    // For now, we'll add it to treasury as a placeholder
-    let seller_payment_balance = coin::into_balance(payment_coin);
-    balance::join(&mut treasury.balance, seller_payment_balance);
+    // Transfer remaining payment (90%) directly to seller
+    let seller_payment_coin = payment_coin;
+    transfer::public_transfer(seller_payment_coin, seller);
     
     // Destructure and reconstruct ticket to transfer ownership
     let Ticket {
@@ -332,50 +366,6 @@ public entry fun purchase_resale_ticket(
     transfer::transfer(new_ticket, buyer);
 }
 
-/// Cancel ticket sale
-public entry fun cancel_ticket_sale(
-    ticket: Ticket,
-    ctx: &mut TxContext
-) {
-    let owner = tx_context::sender(ctx);
-    
-    assert!(ticket.for_sale, E_TICKET_NOT_FOR_SALE);
-    
-    // Destructure and reconstruct with sale cancelled
-    let Ticket {
-        id: ticket_id,
-        event_id,
-        seat_id,
-        seat_type,
-        original_price,
-        resale_count,
-        image_url,
-        metadata_url,
-        for_sale: _,
-        resale_price: _,
-    } = ticket;
-    
-    // Delete the old ticket ID
-    object::delete(ticket_id);
-    
-    // Create ticket with sale cancelled
-    let updated_ticket = Ticket {
-        id: object::new(ctx),
-        event_id,
-        seat_id,
-        seat_type,
-        original_price,
-        resale_count,
-        image_url,
-        metadata_url,
-        for_sale: false,
-        resale_price: 0,
-    };
-    
-    // Transfer ticket back to owner
-    transfer::transfer(updated_ticket, owner);
-}
-
 /// Get event data (view function)
 public fun get_event_info(event_data: &EventData): (u64, u64, u64, u64, u64, u64, address) {
     (
@@ -387,6 +377,44 @@ public fun get_event_info(event_data: &EventData): (u64, u64, u64, u64, u64, u64
         event_data.total_normal_seats,
         event_data.organizer
     )
+}
+
+/// Delete event (organizer only)
+public entry fun delete_event(
+    event_data: EventData,
+    ctx: &mut TxContext
+) {
+    // Check that only the organizer can delete the event
+    assert!(tx_context::sender(ctx) == event_data.organizer, E_NOT_ORGANIZER);
+    
+    // Destructure the event to delete it
+    let EventData {
+        id,
+        event_id: _,
+        name: _,
+        description: _,
+        venue: _,
+        address: _,
+        event_date: _,
+        time: _,
+        closing_time: _,
+        vip_price: _,
+        normal_price: _,
+        total_vip_seats: _,
+        total_normal_seats: _,
+        category: _,
+        language: _,
+        age_rating: _,
+        genres: _,
+        image_url: _,
+        seating_image_url: _,
+        important_notices: _,
+        terms_and_conditions: _,
+        organizer: _,
+    } = event_data;
+    
+    // Delete the event object
+    object::delete(id);
 }
 
 /// Get ticket info (view function)
@@ -411,6 +439,16 @@ public entry fun withdraw_treasury(
     assert!(tx_context::sender(ctx) == treasury.organizer, E_NOT_ORGANIZER);
     
     let withdrawn_balance = balance::split(&mut treasury.balance, amount);
+    let remaining_balance = balance::value(&treasury.balance);
+    
+    // Emit withdrawal event for frontend tracking
+    event::emit(WithdrawalEvent {
+        organizer: treasury.organizer,
+        amount: amount,
+        timestamp: tx_context::epoch_timestamp_ms(ctx),
+        remaining_balance: remaining_balance,
+    });
+    
     let withdrawn_coin = coin::from_balance(withdrawn_balance, ctx);
     transfer::public_transfer(withdrawn_coin, treasury.organizer);
 }

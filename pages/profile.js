@@ -1,3 +1,4 @@
+import React from "react";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { ConnectButton, useWallet, useAccountBalance } from '@suiet/wallet-kit';
@@ -6,7 +7,6 @@ import QRCode from 'react-qr-code';
 import { SuiClient, getFullnodeUrl } from '@mysten/sui.js/client';
 import { useWalletInfo } from '../wallet/useWallet';
 import * as contractUtils from '../utils/contract-interactions';
-import { CONTRACT_CONFIG } from '../utils/contract-config';
 
 const chonburi = Chonburi({
   variable: "--font-chonburi",
@@ -910,6 +910,7 @@ export default function Profile() {
     termsAndConditions: ''
   });
   const [isCreatingEvent, setIsCreatingEvent] = useState(false);
+  const [contractConfig, setContractConfig] = useState(null);
 
   // Initialize the SuiClient for blockchain interactions
   const [suiClient] = useState(new SuiClient({ url: getFullnodeUrl('devnet') }));
@@ -939,6 +940,24 @@ export default function Profile() {
       return walletBalance;
     }
   };
+
+  // Initialize and load contract configuration
+  useEffect(() => {
+    const loadConfig = async () => {
+      console.log('🔄 Loading contract configuration...');
+      const config = await contractUtils.loadContractConfig();
+      if (config) {
+        setContractConfig(config);
+        console.log('✅ Contract config loaded:', {
+          packageId: config.packageId,
+          treasury: config.objects?.treasury
+        });
+      } else {
+        console.error('❌ Failed to load contract configuration');
+      }
+    };
+    loadConfig();
+  }, []);
 
   // Give wallet state time to initialize before checking connection
   useEffect(() => {
@@ -1152,7 +1171,7 @@ export default function Profile() {
       setIsSelling(true);
 
       // Ensure contract is initialized before creating transaction
-      contractUtils.initializeContract(CONTRACT_CONFIG);
+      contractUtils.initializeContract(contractConfig);
       // Convert resale price to MIST as BigInt (not string)
       const resalePriceInMist = contractUtils.suiToMist(parseFloat(resalePrice));
 
@@ -1170,8 +1189,8 @@ export default function Profile() {
       });
 
       // Execute transaction
-      const result = await wallet.signAndExecuteTransactionBlock({
-        transactionBlock: sellTx,
+      const result = await wallet.signAndExecuteTransaction({
+        transaction: sellTx,
         options: {
           showInput: true,
           showEffects: true,
@@ -1230,7 +1249,12 @@ export default function Profile() {
       return;
     }
     
-    if (address !== CONTRACT_CONFIG.organizerAddress) {
+    if (!contractConfig) {
+      alert('Contract configuration not loaded. Please wait and try again.');
+      return;
+    }
+    
+    if (address !== contractConfig.organizerAddress) {
       alert('Only the organizer can create events');
       return;
     }
@@ -1248,20 +1272,20 @@ export default function Profile() {
     
     try {
       // Validate contract configuration first
-      if (!CONTRACT_CONFIG.packageId) {
-        throw new Error('Contract package ID not configured. Please check CONTRACT_CONFIG.packageId in utils/contract-config.js');
+      if (!contractConfig.packageId) {
+        throw new Error('Contract package ID not configured. Please check contract-config.json');
       }
       
       // Check if packageId looks like a valid package address
-      if (!CONTRACT_CONFIG.packageId.startsWith('0x') || CONTRACT_CONFIG.packageId.length !== 66) {
-        throw new Error(`Invalid package ID format: ${CONTRACT_CONFIG.packageId}. Package ID should be a 66-character hex string starting with 0x.`);
+      if (!contractConfig.packageId.startsWith('0x') || contractConfig.packageId.length !== 66) {
+        throw new Error(`Invalid package ID format: ${contractConfig.packageId}. Package ID should be a 66-character hex string starting with 0x.`);
       }
       
-      console.log('📋 Using contract package ID:', CONTRACT_CONFIG.packageId);
-      console.log('🏗️ Target function:', `${CONTRACT_CONFIG.packageId}::ticketing::create_event`);
+      console.log('📋 Using contract package ID:', contractConfig.packageId);
+      console.log('🏗️ Target function:', `${contractConfig.packageId}::ticketing::create_event`);
       
-      // Initialize contract utilities
-      contractUtils.initializeContract(CONTRACT_CONFIG);
+      // Initialize contract utilities with loaded config
+      contractUtils.initializeContract(contractConfig);
       
       // Convert form data to proper format
       const eventDateTime = new Date(eventForm.eventDate).getTime();
@@ -1298,6 +1322,7 @@ export default function Profile() {
         termsAndConditions: eventForm.termsAndConditions || ''
       });
       
+
       console.log('📝 Transaction block created successfully');
       console.log('🔄 Attempting to sign and execute transaction...');
       
@@ -1405,7 +1430,7 @@ export default function Profile() {
       if (!eventObjectId) {
         eventObjectId = parsedResult.objectChanges?.find(
           change => change.type === 'created' && 
-          change.objectType?.includes(`${CONTRACT_CONFIG.packageId}::ticketing::EventData`)
+          change.objectType?.includes(`${contractConfig.packageId}::ticketing::EventData`)
         )?.objectId;
         if (eventObjectId) extractionMethod = 'Full package path match';
       }
@@ -1414,7 +1439,7 @@ export default function Profile() {
       if (!eventObjectId) {
         const packageObjects = parsedResult.objectChanges?.filter(
           change => change.type === 'created' && 
-          change.objectType?.includes(CONTRACT_CONFIG.packageId)
+          change.objectType?.includes(contractConfig.packageId)
         );
         console.log('🔍 Objects from our package:', packageObjects);
         
@@ -1461,14 +1486,15 @@ export default function Profile() {
       });
       
       if (eventObjectId) {
-        console.log(`✅ Successfully extracted event object ID: ${eventObjectId} (method: ${extractionMethod})`);
+        console.log(`✅ Successfully extracted event object ID: ${eventObjectId}`);
         
         // Auto-generate next event ID
-        const existingEventIds = Object.keys(CONTRACT_CONFIG.eventObjectIds).map(Number);
+        const existingEventIds = Object.keys(contractConfig.eventObjectIds || {}).map(Number);
         const nextEventId = existingEventIds.length > 0 ? Math.max(...existingEventIds) + 1 : 1;
         
         // Automatically add to runtime configuration
-        CONTRACT_CONFIG.eventObjectIds[nextEventId] = eventObjectId;
+        if (!contractConfig.eventObjectIds) contractConfig.eventObjectIds = {};
+        contractConfig.eventObjectIds[nextEventId] = eventObjectId;
         
         // Save to localStorage for persistence across sessions
         const dynamicEvents = JSON.parse(localStorage.getItem('dynamic_events') || '{}');
@@ -1503,7 +1529,6 @@ export default function Profile() {
 Event Name: ${eventForm.name}
 Event ID: ${nextEventId}
 Event Object ID: ${eventObjectId}
-Extraction Method: ${extractionMethod}
 
 ✅ The event is now immediately available for ticket purchases!
 ✅ Buyers can now visit: /seat-selection/${nextEventId}
@@ -1533,13 +1558,14 @@ Transaction Hash: ${parsedResult.digest}`);
           termsAndConditions: ''
         });
       } else {
+
         // Enhanced error message with debugging info
         const debugInfo = {
           transactionStatus: parsedResult.effects?.status?.status,
           objectChangesCount: parsedResult.objectChanges?.length || 0,
           createdObjectsCount: allCreatedObjects.length,
           allObjectTypes: allCreatedObjects.map(obj => obj.objectType),
-          packageId: CONTRACT_CONFIG.packageId,
+          packageId: contractConfig.packageId,
           extractionMethods: [
             'EventData pattern match',
             'Full package path match', 
@@ -1577,7 +1603,7 @@ Check browser console for full transaction details.`);
         errorMessage: error.message,
         errorStack: error.stack,
         hasEffects: !!error.effects,
-        contractPackageId: CONTRACT_CONFIG.packageId,
+        contractPackageId: contractConfig.packageId,
         walletConnected: !!wallet?.connected,
         walletAddress: address
       };
@@ -1602,8 +1628,8 @@ This usually means:
 2. The function name "create_event" doesn't exist in the contract
 3. The module name "ticketing" is incorrect
         
-Current package ID: ${CONTRACT_CONFIG.packageId}
-Target function: ${CONTRACT_CONFIG.packageId}::ticketing::create_event`;
+Current package ID: ${contractConfig.packageId}
+Target function: ${contractConfig.packageId}::ticketing::create_event`;
       } else if (error.message.includes('Insufficient gas')) {
         userFriendlyMessage = 'Transaction Error: Insufficient gas or balance to execute the transaction.';
       } else if (error.message.includes('User rejected')) {
@@ -1678,7 +1704,7 @@ Target function: ${CONTRACT_CONFIG.packageId}::ticketing::create_event`;
               </div>
             </button>
             {/* Show Organizer tab only if current wallet is the organizer */}
-            {address === CONTRACT_CONFIG?.organizerAddress && (
+            {address === contractConfig?.organizerAddress && (
               <button
                 className={`text-left px-4 py-3 rounded-lg font-domine font-medium transition-all ${
                   active === "organizer" ? "bg-[#D84040] text-white shadow" : "text-[#A31D1D] hover:bg-[#F8F2DE]"

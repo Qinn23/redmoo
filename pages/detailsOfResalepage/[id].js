@@ -1,6 +1,6 @@
 import { useRouter } from "next/router";
 import { useState, useEffect } from "react";
-import { useWallet } from "../../contexts/WalletContext";
+import { useWallet } from '@suiet/wallet-kit';
 import { createPurchaseResaleTicketTransaction, loadContractConfig } from "../../utils/contract-interactions";
 
 const sampleResaleEvents = [
@@ -37,7 +37,7 @@ export default function DetailsOfResalePage() {
   const { id } = router.query;
   const [ticket, setTicket] = useState(null);
   const [isPurchasing, setIsPurchasing] = useState(false);
-  const { isConnected, wallet } = useWallet();
+  const wallet = useWallet();
 
   useEffect(() => {
     if (id) {
@@ -47,7 +47,7 @@ export default function DetailsOfResalePage() {
   }, [id]);
 
   const handlePurchase = async () => {
-    if (!isConnected) {
+    if (!wallet.connected) {
       alert('Please connect your wallet first');
       return;
     }
