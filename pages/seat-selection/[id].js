@@ -433,32 +433,6 @@ export default function SeatSelection() {
     const totalRowsUsed = currentRow;
     console.log(`📊 Layout Summary: ${totalRowsUsed} rows total, ${vipSeatsCreated} VIP seats, ${normalSeatsCreated} Normal seats`);
     
-    // Use a more efficient approach to mark seats as sold
-    // This ensures the same seats are always sold for the same event
-    const seededRandom = (seed) => {
-      const x = Math.sin(seed) * 10000;
-      return x - Math.floor(x);
-    };
-    
-    // Create array of all possible indices and shuffle them deterministically
-    const allIndices = Array.from({ length: totalSeats }, (_, i) => i);
-    
-    // Shuffle using seeded random (Fisher-Yates algorithm)
-    for (let i = allIndices.length - 1; i > 0; i--) {
-      const j = Math.floor(seededRandom(event.id * 1000 + i) * (i + 1));
-      [allIndices[i], allIndices[j]] = [allIndices[j], allIndices[i]];
-    }
-    
-    // Take first 'soldSeats' indices as sold seats
-    const soldIndices = allIndices.slice(0, soldSeats);
-    
-    // Mark specific seats as sold
-    soldIndices.forEach(index => {
-      if (seats[index]) {
-        seats[index].status = 'sold';
-      }
-    });
-    
     // Check for purchased seats from demo purchases and mark them as sold
     try {
       const demoPurchases = JSON.parse(localStorage.getItem('demo_purchases') || '[]');

@@ -346,7 +346,7 @@ function TicketDetailsModal({ ticket, isOpen, onClose }) {
   );
 }
 
-const sectionContent = (active, handleLogout, walletInfo, tickets, loadingTickets, showPurchaseSuccess, clearDemoPurchases, onViewDetails, onSellTicket, showAccountSelector, wallet, setShowAccountSelector, balanceLoading, getFormattedBalance, eventForm, setEventForm, handleCreateEvent, isCreatingEvent, router) => {
+const sectionContent = (active, handleLogout, walletInfo, tickets, loadingTickets, showPurchaseSuccess, clearDemoPurchases, onViewDetails, onSellTicket, showAccountSelector, wallet, setShowAccountSelector, balanceLoading, getFormattedBalance, eventForm, setEventForm, handleCreateEvent, isCreatingEvent, router, copySuccess, setCopySuccess, shortenObjectId, copyObjectId, removeEvent, isRemovingEvent, removingEventId, contractConfig) => {
   if (active === "mytickets") {
     return (
       <div className="space-y-6">
@@ -943,6 +943,7 @@ export default function Profile() {
   const [isRemovingEvent, setIsRemovingEvent] = useState(false);
   const [removingEventId, setRemovingEventId] = useState(null);
   const [copySuccess, setCopySuccess] = useState('');
+  const [contractConfig, setContractConfig] = useState(null);
 
   // Initialize the SuiClient for blockchain interactions
   const [suiClient] = useState(new SuiClient({ url: getFullnodeUrl('devnet') }));
@@ -981,17 +982,22 @@ export default function Profile() {
       return;
     }
 
+    if (!contractConfig) {
+      alert('Contract configuration not loaded. Please wait and try again.');
+      return;
+    }
+
     try {
       setIsRemovingEvent(true);
       setRemovingEventId(eventData.objectId);
 
       // Initialize contract utilities first
-      contractUtils.initializeContract(CONTRACT_CONFIG);
+      contractUtils.initializeContract(contractConfig);
 
       console.log('🗑️ Removing event:', {
         eventName: eventData.name,
         objectId: eventData.objectId,
-        contractPackage: CONTRACT_CONFIG.packageId
+        contractPackage: contractConfig.packageId
       });
 
       const client = new SuiClient({ url: getFullnodeUrl('devnet') });
@@ -1040,7 +1046,7 @@ export default function Profile() {
           console.log('🔍 ORGANIZER CHECK:', {
             storedInEvent: storedOrganizer,
             currentWallet: currentWallet,
-            configOrganizer: CONTRACT_CONFIG.organizerAddress,
+            configOrganizer: contractConfig.organizerAddress,
             match: storedOrganizer === currentWallet
           });
           
@@ -1050,7 +1056,7 @@ export default function Profile() {
         }
         
         // Check if the object type matches our contract
-        const expectedType = `${CONTRACT_CONFIG.packageId}::ticketing::EventData`;
+        const expectedType = `${contractConfig.packageId}::ticketing::EventData`;
         if (!objectInfo.data.type?.includes('EventData')) {
           console.warn('⚠️ Object type mismatch:', {
             expected: expectedType,
@@ -1069,7 +1075,7 @@ export default function Profile() {
       
       console.log('📋 Executing remove event transaction...');
       console.log('📦 Transaction details:', {
-        target: `${CONTRACT_CONFIG.packageId}::ticketing::remove_event`,
+        target: `${contractConfig.packageId}::ticketing::remove_event`,
         eventObjectId: eventData.objectId
       });
       
@@ -2010,7 +2016,8 @@ Target function: ${contractConfig.packageId}::ticketing::create_event`;
               copyObjectId,
               removeEvent,
               isRemovingEvent,
-              removingEventId
+              removingEventId,
+              contractConfig
             )}
           </div>
         </div>
