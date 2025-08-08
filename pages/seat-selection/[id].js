@@ -15,17 +15,7 @@ const addCacheBuster = (url) => {
   return `${url}${separator}v=${timestamp}&r=${random}`;
 };
 
-// Function to get banner image based on event ID
-const getEventBannerImage = (eventId) => {
-  const homePageImages = {
-    1: "https://media.cnn.com/api/v1/images/stellar/prod/gettyimages-2181107453-20241209114519432.jpg?q=w_3000,c_fill",
-    2: "https://www.billboard.com/wp-content/uploads/2023/09/ed-sheeran-wiltern-2023-billboard-1548.jpg?v=2",
-    3: "https://i.ytimg.com/vi/pX___DCt-6g/hq720.jpg?sqp=-oaymwEhCK4FEIIDSFryq4qpAxMIARUAAAAAGAElAADIQj0AgKJD&rs=AOn4CLAz22YiPPDDDQc0ADmQ6r-oNyz5iQ",
-    4: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhsyC2agb1zZw6MVnRCLoS4iN6wlNWcfE0WUXFgW-U8IUttGujWsixC4Tw2YRJ9OyV4JxWMnmiBcmf5IfkCnsVqCTps7jkj2KxH0zgk6bDXPOhBj0-ztrQMmXPg8TDAkRTlWvGwXggsaSiDgXpfykA1smOhBOhRa6UeVMO9xKj9gFd13pHIoE5os2xxYfn0/w640-h250/Infinite%20KL2025%20-%20Banner.jpg"
-  };
-  
-  return addCacheBuster(homePageImages[eventId] || homePageImages[1]);
-};
+// Function removed - now using dynamic events with their own images
 
 const chonburi = Chonburi({
   variable: "--font-chonburi",
@@ -39,93 +29,7 @@ const domine = Domine({
   weight: ["400", "500", "600", "700"],
 });
 
-// Sample events data (same as event detail page)
-const sampleEvents = [
-  {
-    id: 1,
-    name: "Taylor Swift - The Eras Tour",
-    date: "2025-11-15",
-    time: "8:00 PM",
-    closingTime: "11:30 PM",
-    venue: "MetLife Stadium",
-    address: "1 MetLife Stadium Dr, East Rutherford, NJ 07073",
-    price: "$25",
-    image: "🎤",
-    description: "Experience the magic of Taylor Swift's The Eras Tour live in concert. This spectacular show features hits from all of Taylor's albums, stunning visuals, and unforgettable performances.",
-    category: "Concert",
-    availableTickets: 45,
-    totalTickets: 100,
-    language: "English",
-    ageRating: "All Ages",
-    genres: ["Pop", "Country", "Alternative"],
-    importantNotices: "Please arrive 30 minutes before the show. No cameras or recording devices allowed. Bags must be clear and no larger than 12x12 inches. Food and beverages available for purchase inside the venue.",
-    termsAndConditions: "Tickets are non-refundable and non-transferable. The venue reserves the right to refuse entry. All attendees must comply with venue policies and security measures. In case of event cancellation, refunds will be processed within 30 days.",
-    seatingImage: "https://www.usatoday.com/gcdn/authoring/images/smg/2024/06/08/USAT/73857881007-AFP_2153868989.jpeg?crop=2999,1687,x0,y0&width=2999&height=1687&format=pjpg&auto=webp&v=2"
-  },
-  {
-    id: 2,
-    name: "Ed Sheeran Live in Concert",
-    date: "2025-12-20",
-    time: "7:30 PM",
-    closingTime: "10:45 PM",
-    venue: "Madison Square Garden",
-    address: "4 Pennsylvania Plaza, New York, NY 10001",
-    price: "$20",
-    image: "🎸",
-    description: "Join Ed Sheeran for an intimate evening of acoustic and electric performances featuring his greatest hits and latest releases.",
-    category: "Concert",
-    availableTickets: 23,
-    totalTickets: 80,
-    language: "English",
-    ageRating: "All Ages",
-    genres: ["Pop", "Folk", "Acoustic"],
-    importantNotices: "Doors open at 6:30 PM. No professional cameras allowed. Small personal cameras are permitted. Please check the venue's bag policy before arrival.",
-    termsAndConditions: "Tickets are non-refundable. The artist reserves the right to modify the setlist. All sales are final. No outside food or beverages.",
-    seatingImage: "https://www.billboard.com/wp-content/uploads/2023/09/ed-sheeran-wiltern-2023-billboard-1548.jpg?v=2"
-  },
-  {
-    id: 3,
-    name: "Jay Chou - Carnival World Tour",
-    date: "2026-01-10",
-    time: "8:30 PM",
-    closingTime: "11:00 PM",
-    venue: "Bukit Jalil National Stadium",
-    address: "Bukit Jalil, 57000 Kuala Lumpur, Malaysia",
-    price: "$30",
-    image: "�",
-    description: "Join the King of Mandopop Jay Chou for his spectacular Carnival World Tour featuring his greatest hits and new songs.",
-    category: "Concert",
-    availableTickets: 12,
-    totalTickets: 50,
-    language: "Mandarin/English",
-    ageRating: "All Ages",
-    genres: ["Mandopop", "R&B", "Hip-hop"],
-    importantNotices: "Gates open 90 minutes before show time. No large bags or backpacks. Clear bag policy in effect. Arrive early for security screening.",
-    termsAndConditions: "Tickets are non-refundable. Show time subject to change. No re-entry allowed. Follow all venue policies and security procedures.",
-    seatingImage: "https://r2.myc.my/5adec6968135820189a9717cdfa1bba963415498bdf3c741284342ac1dd5de92"
-  },
-  {
-    id: 4,
-    name: "BIGBANG - 2025 World Tour",
-    date: "2026-02-15",
-    time: "7:00 PM",
-    closingTime: "10:00 PM",
-    venue: "Seoul Olympic Stadium",
-    address: "88 Olympic-ro, Songpa-gu, Seoul, South Korea",
-    price: "$15",
-    image: "🎭",
-    description: "The legendary K-pop group BIGBANG returns with their highly anticipated world tour featuring classic hits and new performances.",
-    category: "Concert",
-    availableTickets: 156,
-    totalTickets: 500,
-    language: "Korean/English",
-    ageRating: "All Ages",
-    genres: ["K-pop", "Hip-hop", "R&B"],
-    importantNotices: "Light sticks permitted. No professional cameras. Photography is permitted but respect others' privacy. Food and drinks available for purchase.",
-    termsAndConditions: "Tickets are non-refundable. The artist reserves the right to modify the schedule. All attendees must follow venue rules and policies.",
-    seatingImage: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhsyC2agb1zZw6MVnRCLoS4iN6wlNWcfE0WUXFgW-U8IUttGujWsixC4Tw2YRJ9OyV4JxWMnmiBcmf5IfkCnsVqCTps7jkj2KxH0zgk6bDXPOhBj0-ztrQMmXPg8TDAkRTlWvGwXggsaSiDgXpfykA1smOhBOhRa6UeVMO9xKj9gFd13pHIoE5os2xxYfn0/w640-h250/Infinite%20KL2025%20-%20Banner.jpg"
-  }
-];
+
 
 // Success Modal Component
 function PurchaseSuccessModal({ isOpen, onClose, details }) {
@@ -286,68 +190,61 @@ export default function SeatSelection() {
 
   useEffect(() => {
     if (id) {
-      // First, try to find in sample events
-      let foundEvent = sampleEvents.find(e => e.id === parseInt(id));
-      
-      // If not found in sample events, check dynamic events from localStorage
-      if (!foundEvent) {
-        try {
-          const dynamicEvents = JSON.parse(localStorage.getItem('dynamic_events') || '{}');
-          const dynamicEvent = dynamicEvents[parseInt(id)];
-          
-          if (dynamicEvent) {
-            // Convert dynamic event to the format expected by the UI
-            foundEvent = {
-              id: parseInt(id),
-              name: dynamicEvent.name,
-              description: dynamicEvent.description,
-              venue: dynamicEvent.venue,
-              address: dynamicEvent.address,
-              date: new Date(dynamicEvent.eventDate).toISOString().split('T')[0], // YYYY-MM-DD format
-              time: dynamicEvent.time,
-              closingTime: dynamicEvent.closingTime,
-              price: `$${dynamicEvent.normalPrice}`, // Format as string for compatibility
-              category: dynamicEvent.category,
-              language: dynamicEvent.language,
-              ageRating: dynamicEvent.ageRating,
-              genres: Array.isArray(dynamicEvent.genres) ? dynamicEvent.genres : [dynamicEvent.genres],
-              // Calculate available tickets based on contract values
-              availableTickets: dynamicEvent.totalVipSeats + dynamicEvent.totalNormalSeats,
-              totalTickets: dynamicEvent.totalVipSeats + dynamicEvent.totalNormalSeats,
-              importantNotices: dynamicEvent.importantNotices,
-              termsAndConditions: dynamicEvent.termsAndConditions,
-              // Use provided image or fallback to default
-              seatingImage: dynamicEvent.seatingImageUrl || dynamicEvent.imageUrl || getEventBannerImage(parseInt(id)),
-              // Add contract-specific data
-              contractData: {
-                objectId: dynamicEvent.objectId,
-                vipPrice: dynamicEvent.vipPrice,
-                normalPrice: dynamicEvent.normalPrice,
-                totalVipSeats: dynamicEvent.totalVipSeats,
-                totalNormalSeats: dynamicEvent.totalNormalSeats
-              }
-            };
-            
-            console.log('✅ Loaded dynamic event:', foundEvent);
-            
-            // Update contract config runtime to include this event
-            if (contractConfig && !contractConfig.eventObjectIds[parseInt(id)]) {
-              contractConfig.eventObjectIds[parseInt(id)] = dynamicEvent.objectId;
+      // Load dynamic events from localStorage
+      try {
+        const dynamicEvents = JSON.parse(localStorage.getItem('dynamic_events') || '{}');
+        const dynamicEvent = dynamicEvents[parseInt(id)];
+        
+        if (dynamicEvent) {
+          // Convert dynamic event to the format expected by the UI
+          const foundEvent = {
+            id: parseInt(id),
+            name: dynamicEvent.name,
+            description: dynamicEvent.description,
+            venue: dynamicEvent.venue,
+            address: dynamicEvent.address,
+            date: new Date(dynamicEvent.eventDate).toISOString().split('T')[0], // YYYY-MM-DD format
+            time: dynamicEvent.time,
+            closingTime: dynamicEvent.closingTime,
+            price: `$${dynamicEvent.normalPrice}`, // Format as string for compatibility
+            category: dynamicEvent.category,
+            language: dynamicEvent.language,
+            ageRating: dynamicEvent.ageRating,
+            genres: Array.isArray(dynamicEvent.genres) ? dynamicEvent.genres : [dynamicEvent.genres],
+            // Calculate available tickets based on contract values
+            availableTickets: dynamicEvent.totalVipSeats + dynamicEvent.totalNormalSeats,
+            totalTickets: dynamicEvent.totalVipSeats + dynamicEvent.totalNormalSeats,
+            importantNotices: dynamicEvent.importantNotices,
+            termsAndConditions: dynamicEvent.termsAndConditions,
+            // Use provided image or fallback to a default placeholder
+            seatingImage: dynamicEvent.seatingImageUrl || dynamicEvent.imageUrl || '/placeholder-event.jpg',
+            // Add contract-specific data
+            contractData: {
+              objectId: dynamicEvent.objectId,
+              vipPrice: dynamicEvent.vipPrice,
+              normalPrice: dynamicEvent.normalPrice,
+              totalVipSeats: dynamicEvent.totalVipSeats,
+              totalNormalSeats: dynamicEvent.totalNormalSeats
             }
+          };
+          
+          console.log('✅ Loaded dynamic event:', foundEvent);
+          
+          // Update contract config runtime to include this event
+          if (contractConfig && !contractConfig.eventObjectIds[parseInt(id)]) {
+            contractConfig.eventObjectIds[parseInt(id)] = dynamicEvent.objectId;
           }
-        } catch (error) {
-          console.error('❌ Error loading dynamic event:', error);
+          
+          setEvent(foundEvent);
+          console.log(`🎫 Event loaded: ${foundEvent.name} (ID: ${id})`);
+        } else {
+          console.log(`❌ Event not found for ID: ${id}`);
         }
-      }
-      
-      if (foundEvent) {
-        setEvent(foundEvent);
-        console.log(`🎫 Event loaded: ${foundEvent.name} (ID: ${id})`);
-      } else {
-        console.log(`❌ Event not found for ID: ${id}`);
+      } catch (error) {
+        console.error('❌ Error loading dynamic event:', error);
       }
     }
-  }, [id]);
+  }, [id, contractConfig]);
 
   // Function to calculate available tickets based on purchases
   const calculateAvailableTickets = useCallback(() => {
@@ -670,9 +567,6 @@ export default function SeatSelection() {
         ...selectedSeats.normal.map(id => allSeats.find(s => s.id === id)).filter(Boolean)
       ];
 
-      // CRITICAL DEBUG - Let's see what we're actually calculating
-      alert(`DEBUG PAYMENT:\nEvent Price: ${event.price}\nCalculateTotal(): ${calculateTotal()}\nTotal with fee: ${total}\nSelected seats: ${selectedSeatsList.length}\nPer seat: ${total / selectedSeatsList.length}\nSeat details: ${selectedSeatsList.map(s => `${s.number}:$${s.price}`).join(', ')}`);
-
       if (selectedSeatsList.length === 0) {
         throw new Error('No valid seats selected');
       }
@@ -700,34 +594,160 @@ export default function SeatSelection() {
       
       // Calculate total amount needed in MIST as integer
       const totalAmountMist = suiToMistInteger(total);
+      const gasNeeded = TX_CONFIG.gaseBudget; // Gas needed in MIST
+      const totalNeededWithGas = totalAmountMist + gasNeeded;
       
-      // Use the first available coin for payment
-      const paymentCoinId = coins.data[0].coinObjectId;
-      const paymentCoin = tx.object(paymentCoinId);
+      // Debug: Log all coin objects and their balances
+      console.log('🔍 All SUI coins:', coins.data.map(coin => ({
+        id: coin.coinObjectId,
+        balance: coin.balance,
+        balanceInSUI: (Number(coin.balance) / 1e9).toFixed(4)
+      })));
       
-      // Calculate individual ticket price for splitting payment as integer
-      const ticketPricePerSeat = Math.floor(total / selectedSeatsList.length);
-      const ticketPriceMistPerSeat = suiToMistInteger(ticketPricePerSeat);
+      // Check if we have enough total balance (including gas)
+      const totalWalletBalance = coins.data.reduce((sum, coin) => sum + Number(coin.balance), 0);
+      if (totalWalletBalance < totalNeededWithGas) {
+        throw new Error(`Insufficient total balance. Have: ${(totalWalletBalance / 1e9).toFixed(4)} SUI, Need: ${(totalNeededWithGas / 1e9).toFixed(4)} SUI (including ${(gasNeeded / 1e9).toFixed(4)} SUI gas)`);
+      }
       
-      // Debug payment amounts
-      console.log('💰 Payment Debug:', {
-        total: total,
-        totalMist: totalAmountMist,
-        selectedSeats: selectedSeatsList.length,
-        ticketPricePerSeat: ticketPricePerSeat,
-        ticketPriceMistPerSeat: ticketPriceMistPerSeat,
-        seatPrices: selectedSeatsList.map(s => ({ id: s.id, price: s.price, type: s.type })),
-        calculateTotalResult: calculateTotal(),
-        calculateTotalWithFee: calculateTotal() * 1.04,
-        basePrice: parseFloat(event.price.replace('$', '')),
-        expectedContractCharge: selectedSeatsList.map(seat => {
-          const seatPrice = seat.type === 'vip' ? parseFloat(event.price.replace('$', '')) * 1.5 : parseFloat(event.price.replace('$', ''));
-          return seatPrice + (seatPrice * 0.04);
-        })
-      });
+      // Sort coins by balance (descending) to use largest coins first
+      const sortedCoins = coins.data.sort((a, b) => Number(b.balance) - Number(a.balance));
       
-      // For now, let's NOT create event data and just use fixed pricing
-      // This will help us isolate if the issue is with event creation or payment processing
+      // Strategy: Auto gas selection with pre-splitting to ensure separate coins
+      let paymentCoins = [];
+      
+      // Validate coin objects first
+      console.log('🔍 Validating coin objects:', sortedCoins.map(coin => ({
+        id: coin.coinObjectId,
+        hasId: !!coin.coinObjectId,
+        balance: coin.balance,
+        typeofId: typeof coin.coinObjectId
+      })));
+      
+      // Check if all coins have valid IDs
+      const invalidCoins = sortedCoins.filter(coin => !coin.coinObjectId || typeof coin.coinObjectId !== 'string');
+      if (invalidCoins.length > 0) {
+        console.error('❌ Invalid coin objects found:', invalidCoins);
+        throw new Error(`Invalid coin objects detected. Please refresh and try again.`);
+      }
+      
+      // Step 1: Ensure we have at least 2 coins (one for gas, one for payment)
+      if (sortedCoins.length === 1) {
+        console.log('📌 Only one coin found, splitting to create separate gas and payment coins');
+        
+        const singleCoin = sortedCoins[0];
+        if (Number(singleCoin.balance) < totalNeededWithGas) {
+          throw new Error(`Single coin insufficient. Have: ${(Number(singleCoin.balance) / 1e9).toFixed(4)} SUI, Need: ${(totalNeededWithGas / 1e9).toFixed(4)} SUI`);
+        }
+        
+        // Split the single coin: create a gas portion and keep the rest for payment
+        const mainCoin = tx.object(singleCoin.coinObjectId);
+        const [gasCoinPortion] = tx.splitCoins(mainCoin, [tx.pure(gasNeeded.toString())]);
+        
+        // Now we have 2 coins: gasCoinPortion (for gas) and mainCoin (remainder for payment)
+        console.log(`✅ Split single coin into gas portion (${(gasNeeded / 1e9).toFixed(4)} SUI) and payment portion (${((Number(singleCoin.balance) - gasNeeded) / 1e9).toFixed(4)} SUI)`);
+        
+        // Use remainder for payment
+        paymentCoins = [{ ...singleCoin, coinObjectId: mainCoin, balance: (Number(singleCoin.balance) - gasNeeded).toString() }];
+        
+        // Let Sui auto-select gas from available coins (including our split portion)
+        console.log('⚠️ Using auto gas selection - Sui will automatically choose from available coins including split portion');
+      } else {
+        console.log(`📌 Multiple coins found (${sortedCoins.length}), using auto gas selection`);
+        
+        // Step 2: For multiple coins, use auto gas selection
+        // Reserve the smallest coins for gas, use larger ones for payment
+        let gasReserveAmount = gasNeeded;
+        let coinsForGas = [];
+        let remainingCoins = [...sortedCoins];
+        
+        // Sort by balance ascending to use smallest coins for gas
+        const sortedBySmallest = sortedCoins.sort((a, b) => Number(a.balance) - Number(b.balance));
+        
+        for (let i = 0; i < sortedBySmallest.length && gasReserveAmount > 0; i++) {
+          const coin = sortedBySmallest[i];
+          coinsForGas.push(coin);
+          gasReserveAmount -= Number(coin.balance);
+          
+          // Remove from remaining coins
+          remainingCoins = remainingCoins.filter(c => c.coinObjectId !== coin.coinObjectId);
+          
+          console.log(`➕ Reserved coin for gas: ${coin.coinObjectId}, balance: ${(Number(coin.balance) / 1e9).toFixed(4)} SUI`);
+          
+          if (gasReserveAmount <= 0) break;
+        }
+        
+        if (gasReserveAmount > 0) {
+          throw new Error(`Insufficient coins for gas reservation. Still need: ${(gasReserveAmount / 1e9).toFixed(4)} SUI`);
+        }
+        
+        // Use remaining coins for payment
+        paymentCoins = remainingCoins;
+        
+        console.log(`📌 Reserved ${coinsForGas.length} coins for gas, ${paymentCoins.length} coins for payment`);
+        console.log('⚠️ Using auto gas selection - Sui will automatically choose from reserved gas coins');
+      }
+      
+      // Step 3: Validate payment coins have enough balance
+      const totalPaymentBalance = paymentCoins.reduce((sum, coin) => sum + Number(coin.balance || 0), 0);
+      if (totalPaymentBalance < totalAmountMist) {
+        throw new Error(`Insufficient payment balance. Have: ${(totalPaymentBalance / 1e9).toFixed(4)} SUI, Need: ${(totalAmountMist / 1e9).toFixed(4)} SUI`);
+      }
+      
+      // Find payment coin from the available payment coins
+      let paymentCoin;
+      
+      // Check if we have enough payment balance
+      const availablePaymentBalance = paymentCoins.reduce((sum, coin) => sum + Number(coin.balance || 0), 0);
+      if (availablePaymentBalance < totalAmountMist) {
+        throw new Error(`Insufficient payment balance. Have: ${(availablePaymentBalance / 1e9).toFixed(4)} SUI, Need: ${(totalAmountMist / 1e9).toFixed(4)} SUI`);
+      }
+      
+      // Try to find a single payment coin with enough balance
+      const coinWithEnoughBalance = paymentCoins.find(coin => Number(coin.balance || 0) >= totalAmountMist);
+      
+      if (coinWithEnoughBalance) {
+        console.log('✅ Found payment coin with sufficient balance:', {
+          balance: coinWithEnoughBalance.balance,
+          balanceInSUI: (Number(coinWithEnoughBalance.balance || 0) / 1e9).toFixed(4),
+          required: totalAmountMist,
+          requiredInSUI: (totalAmountMist / 1e9).toFixed(4)
+        });
+        
+        // Handle both transaction object references and regular coin IDs
+        if (typeof coinWithEnoughBalance.coinObjectId === 'string') {
+          paymentCoin = tx.object(coinWithEnoughBalance.coinObjectId);
+        } else {
+          paymentCoin = coinWithEnoughBalance.coinObjectId; // Already a transaction object
+        }
+      } else {
+        // Need to merge payment coins
+        console.log('⚠️ No single payment coin has enough balance, merging payment coins...');
+        
+        // Start with the first payment coin
+        const primaryCoin = paymentCoins[0];
+        if (typeof primaryCoin.coinObjectId === 'string') {
+          paymentCoin = tx.object(primaryCoin.coinObjectId);
+        } else {
+          paymentCoin = primaryCoin.coinObjectId; // Already a transaction object
+        }
+        
+        // Merge other payment coins into the primary one
+        const coinsToMerge = [];
+        for (let i = 1; i < paymentCoins.length; i++) {
+          const coin = paymentCoins[i];
+          if (typeof coin.coinObjectId === 'string') {
+            coinsToMerge.push(tx.object(coin.coinObjectId));
+            console.log(`➕ Adding payment coin ${i}: ${coin.coinObjectId}, balance: ${(Number(coin.balance) / 1e9).toFixed(4)} SUI`);
+          }
+        }
+        
+        // Merge the payment coins
+        if (coinsToMerge.length > 0) {
+          tx.mergeCoins(paymentCoin, coinsToMerge);
+          console.log(`🔄 Merged ${coinsToMerge.length} payment coins into primary payment coin`);
+        }
+      }
       
       // Call the smart contract purchase_ticket function for each seat
       for (const seat of selectedSeatsList) {
@@ -742,22 +762,11 @@ export default function SeatSelection() {
         // Split the payment coin to get exact amount the contract expects
         const [seatPaymentCoin] = tx.splitCoins(paymentCoin, [tx.pure(BigInt(contractTotalCostMist), "u64")]);
 
-        console.log(`💸 PAYMENT FOR SEAT ${seat.number}:`, {
-          seatPrice: seat.price,
-          seatType: seat.type,
-          contractSeatPrice: contractSeatPrice,
-          contractBookingFee: contractBookingFee,
-          contractTotalCost: contractTotalCost,
-          contractTotalCostMist: contractTotalCostMist,
-          frontendCalculation: ticketPriceMistPerSeat,
-          difference: contractTotalCostMist - ticketPriceMistPerSeat
-        });
-
         // Create event data for this specific seat purchase with proper 20 arguments
         const eventDataCreated = tx.moveCall({
           target: `${contractConfig.packageId}::${contractConfig.module}::create_event`,
           arguments: [
-            tx.pure(BigInt(Date.now() + Math.random()), "u64"), // 1. event_id: u64
+            tx.pure(BigInt(Math.floor(Date.now() + Math.random() * 1000)), "u64"), // 1. event_id: u64
             tx.pure(stringToVector(event.name), "vector<u8>"), // 2. name: vector<u8>
             tx.pure(stringToVector(event.description || ''), "vector<u8>"), // 3. description: vector<u8>
             tx.pure(stringToVector(event.venue), "vector<u8>"), // 4. venue: vector<u8>
@@ -765,8 +774,8 @@ export default function SeatSelection() {
             tx.pure(BigInt(ensureNumber(Date.parse(event.date))), "u64"), // 6. event_date: u64
             tx.pure(stringToVector(event.time || ''), "vector<u8>"), // 7. time: vector<u8>
             tx.pure(stringToVector(event.closingTime || ''), "vector<u8>"), // 8. closing_time: vector<u8>
-            tx.pure(BigInt(suiToMistInteger(Math.floor(parseFloat(event.price.replace('$', '')) * 1.5))), "u64"), // 9. vip_price: u64
-            tx.pure(BigInt(suiToMistInteger(Math.floor(parseFloat(event.price.replace('$', ''))))), "u64"), // 10. normal_price: u64
+            tx.pure(BigInt(ensureNumber(parseFloat(event.price.replace('$', '')) * 1.5 * 1e9)), "u64"), // 9. vip_price: u64 (in MIST)
+            tx.pure(BigInt(ensureNumber(parseFloat(event.price.replace('$', '')) * 1e9)), "u64"), // 10. normal_price: u64 (in MIST)
             tx.pure(BigInt(ensureNumber(20)), "u64"), // 11. total_vip_seats: u64
             tx.pure(BigInt(ensureNumber(80)), "u64"), // 12. total_normal_seats: u64
             tx.pure(stringToVector(event.category || ''), "vector<u8>"), // 13. category: vector<u8>
@@ -886,17 +895,22 @@ export default function SeatSelection() {
     } catch (error) {
       console.error('❌ Real contract transaction error:', error);
       
-      if (error.message?.includes('Insufficient gas') || error.message?.includes('InsufficientGas')) {
-        setTransactionStatus('❌ Insufficient gas for transaction. Please get more SUI from faucet.');
+      if (error.message?.includes('No valid SUI to pay the gas') || 
+          error.message?.includes('Insufficient gas') || 
+          error.message?.includes('InsufficientGas')) {
+        setTransactionStatus('❌ Gas payment failed. Trying to merge coins for gas...');
+        console.log('💡 Tip: Your SUI might be fragmented across multiple coin objects');
       } else if (error.message?.includes('User rejected') || error.message?.includes('rejected')) {
         setTransactionStatus('❌ Transaction cancelled by user.');
-      } else if (error.message?.includes('Insufficient funds') || error.message?.includes('InsufficientCoinBalance')) {
-        setTransactionStatus('❌ Insufficient SUI balance for purchase.');
+      } else if (error.message?.includes('Insufficient funds') || 
+                 error.message?.includes('InsufficientCoinBalance') ||
+                 error.message?.includes('Insufficient total balance')) {
+        setTransactionStatus(`❌ Insufficient SUI balance for purchase. ${error.message}`);
       } else {
         setTransactionStatus(`❌ Contract transaction failed: ${error.message || 'Unknown error'}`);
       }
       
-      setTimeout(() => setTransactionStatus(null), 5000);
+      setTimeout(() => setTransactionStatus(null), 8000);
     } finally {
       setIsProcessing(false);
     }
@@ -981,7 +995,7 @@ export default function SeatSelection() {
                   <div 
                     className="absolute inset-0 bg-cover bg-center transform scale-105"
                     style={{
-                      backgroundImage: `url('${getEventBannerImage(event.id)}')`,
+                      backgroundImage: `url('${event.imageUrl || '/placeholder-event.jpg'}')`,
                       animation: 'zoomInOut 8s ease-in-out infinite'
                     }}
                   ></div>
