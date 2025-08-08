@@ -1,16 +1,16 @@
 // Deployed contract configuration - Updated with new deployment
 export const CONTRACT_CONFIG = {
-  packageId: '0x5b60aa952dd76bd3d8608bbbd57c0995a1455a991e17c2465d5ae679c12d9f9b',
-  treasuryId: '0x0d25c4ef6deec4fc541d37679b1ee5d7d04cdb508aca50f5ed4677cae28ad8f4',
+  packageId: '0xa6c1c0f15ba21d3732ffab62f2615fab9d86d6de136cf0635ad447509ee5b981',
+  treasuryId: '0x064e42bfc59e342dbb701aabf57d54716d7452a60ead47a96f271b91e7126542',
   // treasury refers to the account that receives all payments and fees collected from ticket purchases.
   
   // Organizer settings
-  organizerAddress: '0xe8b34b4ec5b0a05a7754f474d4c06e22c880f18b1d3617807dd8f09efc85fb2b', // Same as treasury for now
+  organizerAddress: '0xe8b34b4ec5b0a05a7754f474d4c06e22c880f18b1d3617807dd8f09efc85fb2b', // Updated to match actual organizer wallet
   
   // Contract objects
   objects: {
-    organizerCap: '0xdb51e1e52f38b202a2529ddbfdda582ebf1f415ee8ab5082939030d9e39d81cb', 
-    walletTracker: '0x9c2b1207c6ad2da966f8dae6bdd8c83effa725840ecc288f9c6e8eca26eedd7f',
+    organizerCap: '0x737fd46e5dbb81a6f9e908ed6bfefbc6baf047f64a12fe5dccbaf35ea106e87d', // UpgradeCap object ID
+    walletTracker: '0x776249bf2fa663af5f18fb8f027bdb91472830ff7f4fd0791db8ae94f651da40',
   },
   
   // Event object IDs (created by organizer) - TODO: Update with actual event object IDs

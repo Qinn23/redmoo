@@ -407,37 +407,98 @@ export default function SeatSelection() {
     const availableSeats = Math.floor((dynamicAvailableTickets / actualTotalSeats) * totalSeats);
     const soldSeats = totalSeats - availableSeats;
     
-    // Create rows (approximately 10-15 seats per row)
-    const seatsPerRow = Math.min(15, Math.max(8, Math.floor(Math.sqrt(totalSeats))));
-    const totalRows = Math.ceil(totalSeats / seatsPerRow);
+    // Get exact VIP and Normal seat counts from event data
+    console.log('🔍 DEBUG: Event contractData:', event.contractData);
+    console.log('🔍 DEBUG: Raw event data:', event);
     
-    // VIP section: front 30% of rows
-    const vipRows = Math.max(1, Math.floor(totalRows * 0.3));
-    const normalRows = totalRows - vipRows;
+    const vipSeatsCount = event.contractData?.totalVipSeats || Math.floor(totalSeats * 0.3);
+    const normalSeatsCount = event.contractData?.totalNormalSeats || (totalSeats - vipSeatsCount);
+    
+    console.log('🎫 Seat generation info:', {
+      totalSeats,
+      vipSeatsCount,
+      normalSeatsCount,
+      hasContractData: !!event.contractData,
+      contractVipSeats: event.contractData?.totalVipSeats,
+      contractNormalSeats: event.contractData?.totalNormalSeats,
+      vipPrice: event.contractData?.vipPrice,
+      normalPrice: event.contractData?.normalPrice
+    });
+    
+    // FLEXIBLE SEATING SYSTEM: 8 seats per row, VIP in front, Normal in back
+    const SEATS_PER_ROW = 8;
     
     const seats = [];
-    let seatIndex = 0;
+    let vipSeatsCreated = 0;
+    let normalSeatsCreated = 0;
     
-    // Generate all seats
-    for (let row = 1; row <= totalRows; row++) {
-      const isVip = row <= vipRows;
-      const seatsInThisRow = Math.min(seatsPerRow, totalSeats - seatIndex);
-      
-      for (let seat = 1; seat <= seatsInThisRow; seat++) {
-        seats.push({
-          id: `${row}-${seat}`,
-          row: row,
-          seat: seat,
-          number: `${String.fromCharCode(64 + row)}${seat}`,
-          type: isVip ? 'vip' : 'normal',
-          price: isVip 
-            ? (event.contractData?.vipPrice || Math.floor(parseFloat(event.price.replace('$', '')) * 1.5))
-            : (event.contractData?.normalPrice || parseFloat(event.price.replace('$', ''))),
-          status: 'available' // Will be updated below
-        });
-        seatIndex++;
+    console.log(`🏟️ Creating seating layout: ${vipSeatsCount} VIP + ${normalSeatsCount} Normal (${SEATS_PER_ROW} seats per row)`);
+    
+    // === STEP 1: CREATE ALL VIP SEATS FIRST (FRONT ROWS) ===
+    let currentRow = 1;
+    let seatsInCurrentRow = 0;
+    
+    console.log(`🟨 === VIP SECTION (${vipSeatsCount} seats) ===`);
+    for (let i = 0; i < vipSeatsCount; i++) {
+      // Move to next row if current row is full
+      if (seatsInCurrentRow >= SEATS_PER_ROW) {
+        currentRow++;
+        seatsInCurrentRow = 0;
       }
+      
+      const seatInRow = seatsInCurrentRow + 1;
+      const seatNumber = `${String.fromCharCode(64 + currentRow)}${seatInRow}`;
+      
+      seats.push({
+        id: `${currentRow}-${seatInRow}`,
+        row: currentRow,
+        seat: seatInRow,
+        number: seatNumber,
+        type: 'vip',
+        price: event.contractData?.vipPrice || Math.floor(parseFloat(event.price.replace('$', '')) * 1.5),
+        status: 'available'
+      });
+      
+      vipSeatsCreated++;
+      seatsInCurrentRow++;
+      console.log(`🟨 VIP ${vipSeatsCreated}/${vipSeatsCount}: ${seatNumber} (Row ${currentRow}, Seat ${seatInRow})`);
     }
+    
+    // === STEP 2: START NORMAL SECTION (BACK ROWS) ===
+    // If VIP section didn't fill the last row completely, move to next row for clean separation
+    if (seatsInCurrentRow > 0) {
+      currentRow++;
+      seatsInCurrentRow = 0;
+    }
+    
+    console.log(`🔘 === NORMAL SECTION (${normalSeatsCount} seats) starting from Row ${currentRow} ===`);
+    for (let i = 0; i < normalSeatsCount; i++) {
+      // Move to next row if current row is full
+      if (seatsInCurrentRow >= SEATS_PER_ROW) {
+        currentRow++;
+        seatsInCurrentRow = 0;
+      }
+      
+      const seatInRow = seatsInCurrentRow + 1;
+      const seatNumber = `${String.fromCharCode(64 + currentRow)}${seatInRow}`;
+      
+      seats.push({
+        id: `${currentRow}-${seatInRow}`,
+        row: currentRow,
+        seat: seatInRow,
+        number: seatNumber,
+        type: 'normal',
+        price: event.contractData?.normalPrice || parseFloat(event.price.replace('$', '')),
+        status: 'available'
+      });
+      
+      normalSeatsCreated++;
+      seatsInCurrentRow++;
+      console.log(`🔘 Normal ${normalSeatsCreated}/${normalSeatsCount}: ${seatNumber} (Row ${currentRow}, Seat ${seatInRow})`);
+    }
+    
+    const totalRowsUsed = currentRow;
+    console.log(`📊 Layout Summary: ${totalRowsUsed} rows total, ${vipSeatsCreated} VIP seats, ${normalSeatsCreated} Normal seats`);
     
     // Use a more efficient approach to mark seats as sold
     // This ensures the same seats are always sold for the same event
@@ -488,6 +549,20 @@ export default function SeatSelection() {
     } catch (error) {
       console.error('❌ Error checking purchased seats:', error);
     }
+    
+    // Final verification: Count actual VIP and Normal seats created
+    const actualVipSeats = seats.filter(seat => seat.type === 'vip').length;
+    const actualNormalSeats = seats.filter(seat => seat.type === 'normal').length;
+    
+    console.log('✅ FINAL SEAT VERIFICATION:', {
+      expectedVipSeats: vipSeatsCount,
+      actualVipSeats: actualVipSeats,
+      expectedNormalSeats: normalSeatsCount,
+      actualNormalSeats: actualNormalSeats,
+      totalExpected: vipSeatsCount + normalSeatsCount,
+      totalActual: seats.length,
+      allSeats: seats.map(s => ({ number: s.number, type: s.type, price: s.price }))
+    });
     
     // Group seats by row for easier rendering
     const groupedSeats = {};
@@ -938,7 +1013,6 @@ export default function SeatSelection() {
               <div className="space-y-2 mb-8">
                 {Object.keys(seatsByRow).sort((a, b) => Number(a) - Number(b)).map(rowNumber => {
                   const row = seatsByRow[rowNumber];
-                  const isVipRow = row[0]?.type === 'vip';
                   
                   return (
                     <div key={rowNumber} className="flex items-center justify-center gap-1">
@@ -952,6 +1026,7 @@ export default function SeatSelection() {
                         {row.map((seat, index) => {
                           const isSelected = selectedSeats[seat.type]?.includes(seat.id);
                           const isSold = seat.status === 'sold';
+                          const isVipSeat = seat.type === 'vip'; // Check individual seat type
                           
                           return (
                             <button
@@ -963,7 +1038,7 @@ export default function SeatSelection() {
                                   ? 'bg-red-500 text-white cursor-not-allowed'
                                   : isSelected
                                   ? 'bg-green-500 text-white shadow-lg transform scale-110'
-                                  : isVipRow
+                                  : isVipSeat
                                   ? 'bg-yellow-200 text-[#D84040] border border-yellow-400 hover:bg-yellow-300'
                                   : 'bg-gray-200 text-[#D84040] border border-gray-400 hover:bg-gray-300'
                               }`}
