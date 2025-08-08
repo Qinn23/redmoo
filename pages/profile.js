@@ -869,6 +869,22 @@ const sectionContent = (active, handleLogout, walletInfo, tickets, loadingTicket
   return null;
 };
 
+// Helper function to generate valid Sui object IDs
+function generateValidSuiObjectId() {
+  const randomHex = Array.from({length: 64}, () => 
+    Math.floor(Math.random() * 16).toString(16)
+  ).join('');
+  return `0x${randomHex}`;
+}
+
+// Helper function to validate Sui object IDs
+function isValidSuiObjectId(objectId) {
+  return typeof objectId === 'string' && 
+         objectId.length === 66 && 
+         objectId.startsWith('0x') && 
+         /^[a-fA-F0-9]+$/.test(objectId.slice(2));
+}
+
 export default function Profile() {
   const router = useRouter();
   const [active, setActive] = useState("mytickets");
@@ -1063,7 +1079,7 @@ export default function Profile() {
               }
               // Fallback: generate a mock objectId if missing
               if (!objectId) {
-                objectId = `${purchase.id}-seat-${index}-obj`;
+                objectId = generateValidSuiObjectId(); // Use valid Sui object ID for demo tickets
               }
               purchasedTickets.push({
                 id: `${purchase.id}-seat-${index}`,
