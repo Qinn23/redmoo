@@ -430,6 +430,43 @@ public fun get_ticket_info(ticket: &Ticket): (u64, vector<u8>, u8, u64, u8, bool
     )
 }
 
+/// Remove an event (organizer only)
+public entry fun remove_event(
+    event_data: EventData,
+    ctx: &mut TxContext
+) {
+    // Only the event organizer can remove the event
+    assert!(tx_context::sender(ctx) == event_data.organizer, E_NOT_ORGANIZER);
+    
+    // Delete the event object
+    let EventData {
+        id,
+        event_id: _,
+        name: _,
+        description: _,
+        venue: _,
+        address: _,
+        event_date: _,
+        time: _,
+        closing_time: _,
+        vip_price: _,
+        normal_price: _,
+        total_vip_seats: _,
+        total_normal_seats: _,
+        category: _,
+        language: _,
+        age_rating: _,
+        genres: _,
+        image_url: _,
+        seating_image_url: _,
+        important_notices: _,
+        terms_and_conditions: _,
+        organizer: _,
+    } = event_data;
+    
+    object::delete(id);
+}
+
 /// Withdraw treasury balance (organizer only)
 public entry fun withdraw_treasury(
     treasury: &mut Treasury,
