@@ -5,7 +5,7 @@ import { useWallet, useAccountBalance } from '@suiet/wallet-kit';
 import { TransactionBlock } from '@mysten/sui.js/transactions';
 import { SuiClient } from '@mysten/sui.js/client';
 import { suiToMist } from '../../utils/contract-interactions';
-import { CONTRACT_CONFIG, TX_CONFIG, TICKET_PRICES } from '../../utils/contract-config';
+import { TX_CONFIG, TICKET_PRICES } from '../../utils/contract-config';
 
 // Function to add cache-busting parameter to image URLs
 const addCacheBuster = (url) => {
@@ -246,6 +246,7 @@ export default function SeatSelection() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [transactionStatus, setTransactionStatus] = useState(null);
   const [availableTickets, setAvailableTickets] = useState(0);
+  const [contractConfig, setContractConfig] = useState(null);
 
   // Utility functions for wallet
   const getFormattedBalance = useCallback(() => {
@@ -266,6 +267,22 @@ export default function SeatSelection() {
   // Success modal state
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [purchaseDetails, setPurchaseDetails] = useState(null);
+
+  // Load contract configuration dynamically
+  useEffect(() => {
+    const loadContractConfig = async () => {
+      try {
+        const response = await fetch('/contract-config.json');
+        const config = await response.json();
+        setContractConfig(config);
+        console.log('✅ Contract config loaded:', config);
+      } catch (error) {
+        console.error('❌ Failed to load contract config:', error);
+      }
+    };
+    
+    loadContractConfig();
+  }, []);
 
   useEffect(() => {
     if (id) {
@@ -313,9 +330,9 @@ export default function SeatSelection() {
             
             console.log('✅ Loaded dynamic event:', foundEvent);
             
-            // Update CONTRACT_CONFIG runtime to include this event
-            if (!CONTRACT_CONFIG.eventObjectIds[parseInt(id)]) {
-              CONTRACT_CONFIG.eventObjectIds[parseInt(id)] = dynamicEvent.objectId;
+            // Update contract config runtime to include this event
+            if (contractConfig && !contractConfig.eventObjectIds[parseInt(id)]) {
+              contractConfig.eventObjectIds[parseInt(id)] = dynamicEvent.objectId;
             }
           }
         } catch (error) {
@@ -363,6 +380,24 @@ export default function SeatSelection() {
     }
   }, [event, id]);
 
+  // Function to clear purchases for testing (for development only)
+  const clearPurchasesForEvent = useCallback(() => {
+    if (window.confirm('Clear all purchases for this event? This is for testing only.')) {
+      const demoPurchases = JSON.parse(localStorage.getItem('demo_purchases') || '[]');
+      const filteredPurchases = demoPurchases.filter(purchase => 
+        purchase.eventId !== parseInt(id) && purchase.eventName !== event?.name
+      );
+      localStorage.setItem('demo_purchases', JSON.stringify(filteredPurchases));
+      setSeatRefreshKey(prev => prev + 1);
+      
+      if (event) {
+        const available = event.availableTickets;
+        setAvailableTickets(available);
+      }
+      console.log('🗑️ Cleared purchases for this event');
+    }
+  }, [id, event]);
+
   // Update available tickets when event changes or purchases are made
   useEffect(() => {
     if (event) {
@@ -404,8 +439,9 @@ export default function SeatSelection() {
     
     // Scale available seats proportionally  
     const dynamicAvailableTickets = availableTickets > 0 ? availableTickets : event.availableTickets;
-    const availableSeats = Math.floor((dynamicAvailableTickets / actualTotalSeats) * totalSeats);
-    const soldSeats = totalSeats - availableSeats;
+    
+    // Don't pre-mark seats as sold unless they're actually purchased
+    // All seats start as available, only mark as sold based on actual purchases
     
     // Create rows (approximately 10-15 seats per row)
     const seatsPerRow = Math.min(15, Math.max(8, Math.floor(Math.sqrt(totalSeats))));
@@ -431,39 +467,16 @@ export default function SeatSelection() {
           number: `${String.fromCharCode(64 + row)}${seat}`,
           type: isVip ? 'vip' : 'normal',
           price: isVip 
-            ? (event.contractData?.vipPrice || Math.floor(parseFloat(event.price.replace('$', '')) * 1.5))
-            : (event.contractData?.normalPrice || parseFloat(event.price.replace('$', ''))),
+            ? Math.floor(event.contractData?.vipPrice || parseFloat(event.price.replace('$', '')) * 1.5)
+            : Math.floor(event.contractData?.normalPrice || parseFloat(event.price.replace('$', ''))),
           status: 'available' // Will be updated below
         });
         seatIndex++;
       }
     }
     
-    // Use a more efficient approach to mark seats as sold
-    // This ensures the same seats are always sold for the same event
-    const seededRandom = (seed) => {
-      const x = Math.sin(seed) * 10000;
-      return x - Math.floor(x);
-    };
-    
-    // Create array of all possible indices and shuffle them deterministically
-    const allIndices = Array.from({ length: totalSeats }, (_, i) => i);
-    
-    // Shuffle using seeded random (Fisher-Yates algorithm)
-    for (let i = allIndices.length - 1; i > 0; i--) {
-      const j = Math.floor(seededRandom(event.id * 1000 + i) * (i + 1));
-      [allIndices[i], allIndices[j]] = [allIndices[j], allIndices[i]];
-    }
-    
-    // Take first 'soldSeats' indices as sold seats
-    const soldIndices = allIndices.slice(0, soldSeats);
-    
-    // Mark specific seats as sold
-    soldIndices.forEach(index => {
-      if (seats[index]) {
-        seats[index].status = 'sold';
-      }
-    });
+    // All seats start as available - no random marking as sold
+    // Only mark seats as sold based on actual purchases from localStorage
     
     // Check for purchased seats from demo purchases and mark them as sold
     try {
@@ -594,6 +607,28 @@ export default function SeatSelection() {
 
 
   const proceedToCheckout = async () => {
+    // Helper function to ensure number is valid integer or return 0
+    const ensureNumber = (num) => {
+      if (typeof num === 'bigint') {
+        return Number(num); // Convert BigInt to Number
+      }
+      const parsed = parseFloat(num);
+      return isNaN(parsed) || parsed < 0 ? 0 : Math.floor(parsed);
+    };
+
+    // Helper function to convert SUI to MIST as integer
+    const suiToMistInteger = (suiAmount) => {
+      return Math.floor(parseFloat(suiAmount) * 1_000_000_000);
+    };
+
+    // Helper function to convert string to vector<u8> or empty array
+    const stringToVector = (str) => {
+      if (!str || str.trim() === '') {
+        return []; // Empty vector<u8> for blank strings
+      }
+      return Array.from(new TextEncoder().encode(str));
+    };
+
     if (getTotalSelectedSeats() === 0) {
       setTransactionStatus('⚠️ Please select at least one seat');
       setTimeout(() => setTransactionStatus(null), 3000);
@@ -606,6 +641,12 @@ export default function SeatSelection() {
         setTransactionStatus(null);
         router.push('/connect-wallet');
       }, 2000);
+      return;
+    }
+
+    if (!contractConfig) {
+      setTransactionStatus('⚠️ Contract configuration not loaded yet');
+      setTimeout(() => setTransactionStatus(null), 3000);
       return;
     }
 
@@ -657,16 +698,16 @@ export default function SeatSelection() {
         throw new Error('No SUI coins found in wallet');
       }
       
-      // Calculate total amount needed in MIST
-      const totalAmountMist = Math.floor(total * 1e9); // Convert SUI to MIST
+      // Calculate total amount needed in MIST as integer
+      const totalAmountMist = suiToMistInteger(total);
       
       // Use the first available coin for payment
       const paymentCoinId = coins.data[0].coinObjectId;
       const paymentCoin = tx.object(paymentCoinId);
       
-      // Calculate individual ticket price for splitting payment
-      const ticketPricePerSeat = total / selectedSeatsList.length;
-      const ticketPriceMistPerSeat = Math.floor(ticketPricePerSeat * 1e9);
+      // Calculate individual ticket price for splitting payment as integer
+      const ticketPricePerSeat = Math.floor(total / selectedSeatsList.length);
+      const ticketPriceMistPerSeat = suiToMistInteger(ticketPricePerSeat);
       
       // Debug payment amounts
       console.log('💰 Payment Debug:', {
@@ -690,16 +731,16 @@ export default function SeatSelection() {
       
       // Call the smart contract purchase_ticket function for each seat
       for (const seat of selectedSeatsList) {
-        // Calculate the exact payment amount the contract expects
+        // Calculate the exact payment amount the contract expects (convert to integers)
         const contractSeatPrice = seat.type === 'vip' ? 
-          parseFloat(event.price.replace('$', '')) * 1.5 : 
-          parseFloat(event.price.replace('$', ''));
-        const contractBookingFee = contractSeatPrice * 0.04;
+          Math.floor(parseFloat(event.price.replace('$', '')) * 1.5) : 
+          Math.floor(parseFloat(event.price.replace('$', '')));
+        const contractBookingFee = Math.floor(contractSeatPrice * 0.04);
         const contractTotalCost = contractSeatPrice + contractBookingFee;
-        const contractTotalCostMist = Math.floor(contractTotalCost * 1e9);
+        const contractTotalCostMist = suiToMistInteger(contractTotalCost);
 
         // Split the payment coin to get exact amount the contract expects
-        const [seatPaymentCoin] = tx.splitCoins(paymentCoin, [tx.pure(contractTotalCostMist.toString())]);
+        const [seatPaymentCoin] = tx.splitCoins(paymentCoin, [tx.pure(BigInt(contractTotalCostMist), "u64")]);
 
         console.log(`💸 PAYMENT FOR SEAT ${seat.number}:`, {
           seatPrice: seat.price,
@@ -712,16 +753,30 @@ export default function SeatSelection() {
           difference: contractTotalCostMist - ticketPriceMistPerSeat
         });
 
-        // Create event data for this specific seat purchase
+        // Create event data for this specific seat purchase with proper 20 arguments
         const eventDataCreated = tx.moveCall({
-          target: `${CONTRACT_CONFIG.packageId}::${CONTRACT_CONFIG.module}::create_event`,
+          target: `${contractConfig.packageId}::${contractConfig.module}::create_event`,
           arguments: [
-            tx.pure(Date.now() + Math.random()), // unique event_id to avoid conflicts
-            tx.pure(Date.parse(event.date)), // event_date as timestamp
-            tx.pure(Math.floor(parseFloat(event.price.replace('$', '')) * 1.5 * 1e9)), // vip_price in MIST 
-            tx.pure(Math.floor(parseFloat(event.price.replace('$', '')) * 1e9)), // normal_price in MIST 
-            tx.pure(20), // total_vip_seats
-            tx.pure(80), // total_normal_seats
+            tx.pure(BigInt(Date.now() + Math.random()), "u64"), // 1. event_id: u64
+            tx.pure(stringToVector(event.name), "vector<u8>"), // 2. name: vector<u8>
+            tx.pure(stringToVector(event.description || ''), "vector<u8>"), // 3. description: vector<u8>
+            tx.pure(stringToVector(event.venue), "vector<u8>"), // 4. venue: vector<u8>
+            tx.pure(stringToVector(event.address || ''), "vector<u8>"), // 5. address: vector<u8>
+            tx.pure(BigInt(ensureNumber(Date.parse(event.date))), "u64"), // 6. event_date: u64
+            tx.pure(stringToVector(event.time || ''), "vector<u8>"), // 7. time: vector<u8>
+            tx.pure(stringToVector(event.closingTime || ''), "vector<u8>"), // 8. closing_time: vector<u8>
+            tx.pure(BigInt(suiToMistInteger(Math.floor(parseFloat(event.price.replace('$', '')) * 1.5))), "u64"), // 9. vip_price: u64
+            tx.pure(BigInt(suiToMistInteger(Math.floor(parseFloat(event.price.replace('$', ''))))), "u64"), // 10. normal_price: u64
+            tx.pure(BigInt(ensureNumber(20)), "u64"), // 11. total_vip_seats: u64
+            tx.pure(BigInt(ensureNumber(80)), "u64"), // 12. total_normal_seats: u64
+            tx.pure(stringToVector(event.category || ''), "vector<u8>"), // 13. category: vector<u8>
+            tx.pure(stringToVector(event.language || 'English'), "vector<u8>"), // 14. language: vector<u8>
+            tx.pure(stringToVector(event.ageRating || 'All Ages'), "vector<u8>"), // 15. age_rating: vector<u8>
+            tx.pure(stringToVector(Array.isArray(event.genres) ? event.genres.join(', ') : (event.genres || '')), "vector<u8>"), // 16. genres: vector<u8>
+            tx.pure(stringToVector(''), "vector<u8>"), // 17. image_url: vector<u8>
+            tx.pure(stringToVector(''), "vector<u8>"), // 18. seating_image_url: vector<u8>
+            tx.pure(stringToVector(event.importantNotices || ''), "vector<u8>"), // 19. important_notices: vector<u8>
+            tx.pure(stringToVector(event.termsAndConditions || ''), "vector<u8>"), // 20. terms_and_conditions: vector<u8>
           ],
         });
 
@@ -743,10 +798,10 @@ export default function SeatSelection() {
 
         // Now purchase the ticket using the created event data
         tx.moveCall({
-          target: `${CONTRACT_CONFIG.packageId}::ticketing::purchase_ticket`,
+          target: `${contractConfig.packageId}::ticketing::purchase_ticket`,
           arguments: [
             eventDataCreated, // event_data object reference
-            tx.object(CONTRACT_CONFIG.treasuryId), // treasury
+            tx.object(contractConfig.treasuryId), // treasury
             tx.pure(Array.from(new TextEncoder().encode(seat.number))), // seat_id as bytes
             tx.pure(seat.type === 'vip' ? 1 : 2), // seat_type (1 for VIP, 2 for Normal)
             tx.pure(Array.from(new TextEncoder().encode(imageUrl))), // image_url as bytes
@@ -900,6 +955,15 @@ export default function SeatSelection() {
                 </span>
               )}
             </p>
+            {/* Development only - clear purchases button */}
+            {process.env.NODE_ENV === 'development' && (
+              <button 
+                onClick={clearPurchasesForEvent}
+                className="text-xs bg-red-500 text-white px-2 py-1 rounded mt-2 hover:bg-red-600"
+              >
+                🗑️ Clear Purchases (Dev Only)
+              </button>
+            )}
           </div>
         </div>
 

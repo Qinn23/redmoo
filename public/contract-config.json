@@ -7,12 +7,7 @@
     "organizerCap": "0x43885c7c4bf56f141e57e7d4d8f34dbb74a80917c0b77845ae5bb79aaa076c7a",
     "walletTracker": "0x3c3dfe138538057e4745089f5968d068de1a9fee05dcfbe0a69043febabc48ad"
   },
-  "eventObjectIds": {
-    "1": "0xevent_1_object_id",
-    "2": "0xevent_2_object_id",
-    "3": "0xevent_3_object_id",
-    "4": "0xevent_4_object_id"
-  },
+  "eventObjectIds": {},
   "network": "devnet",
   "module": "ticketing"
 }

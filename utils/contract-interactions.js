@@ -19,9 +19,20 @@ export function initializeContract(config) {
 // Load contract configuration from deployed contract
 export async function loadContractConfig() {
   try {
+    console.log('🔄 Loading contract config from /contract-config.json...');
     const response = await fetch('/contract-config.json');
     const config = await response.json();
     CONTRACT_CONFIG = config;
+    console.log('🔧 Loaded contract config:', {
+      packageId: config.packageId,
+      treasury: config.objects?.treasury,
+      walletTracker: config.objects?.walletTracker
+    });
+    console.log('🚨 PACKAGE ID CHECK:', {
+      loaded: config.packageId,
+      expected: '0xe8c72bb82abf408049d1d0dbc664bfb96175cab514990c9b44a5334d8ad542c8',
+      matches: config.packageId === '0xe8c72bb82abf408049d1d0dbc664bfb96175cab514990c9b44a5334d8ad542c8'
+    });
     return config;
   } catch (error) {
     console.error('Failed to load contract configuration:', error);
@@ -105,6 +116,22 @@ export function createPurchaseTicketTransaction(params) {
 }
 
 /**
+ * Get next event ID starting from 1
+ */
+function getNextEventId() {
+  // Get existing events from localStorage
+  const existingEvents = JSON.parse(localStorage.getItem('dynamic_events') || '{}');
+  const existingIds = Object.keys(existingEvents).map(id => parseInt(id));
+  
+  // Find the highest existing ID and add 1, or start from 1 if none exist
+  if (existingIds.length === 0) {
+    return 1;
+  }
+  
+  return Math.max(...existingIds) + 1;
+}
+
+/**
  * Create a transaction to create a new event (organizer only)
  */
 export function createEventTransaction(params) {
@@ -136,33 +163,101 @@ export function createEventTransaction(params) {
 
   const tx = new TransactionBlock();
 
-  // Generate a simple event ID based on timestamp
-  const eventId = Date.now();
+  // Use simple counter starting from 1 instead of timestamp
+  const eventId = getNextEventId();
+
+  // Helper function to convert string to vector<u8> or empty array
+  const stringToVector = (str) => {
+    if (!str || str.trim() === '') {
+      return []; // Empty vector<u8> for blank strings
+    }
+    return Array.from(new TextEncoder().encode(str));
+  };
+
+  // Helper function to ensure number is valid integer or return 0
+  const ensureNumber = (num) => {
+    if (typeof num === 'bigint') {
+      return Number(num); // Convert BigInt to Number
+    }
+    const parsed = parseFloat(num);
+    return isNaN(parsed) || parsed < 0 ? 0 : Math.floor(parsed);
+  };
+
+  // Helper function to convert SUI to MIST as integer
+  const suiToMistInteger = (suiAmount) => {
+    return Math.floor(parseFloat(suiAmount) * 1_000_000_000);
+  };
+
+  // Debug logging for argument validation
+  console.log('🔍 Event creation parameters:', {
+    eventId,
+    name: name?.length || 0,
+    description: description?.length || 0,
+    venue: venue?.length || 0,
+    address: address?.length || 0,
+    eventDate,
+    time: time?.length || 0,
+    closingTime: closingTime?.length || 0,
+    vipPriceInMist: typeof vipPriceInMist,
+    normalPriceInMist: typeof normalPriceInMist,
+    totalVipSeats,
+    totalNormalSeats,
+    category: category?.length || 0,
+    language: language?.length || 0,
+    ageRating: ageRating?.length || 0,
+    genres: genres?.length || 0,
+    imageUrl: imageUrl?.length || 0,
+    seatingImageUrl: seatingImageUrl?.length || 0,
+    importantNotices: importantNotices?.length || 0,
+    termsAndConditions: termsAndConditions?.length || 0
+  });
+
+  const arguments_array = [
+    tx.pure(BigInt(eventId), "u64"), // 1. event_id: u64 - now starts from 1
+    tx.pure(stringToVector(name), "vector<u8>"), // 2. name: vector<u8>
+    tx.pure(stringToVector(description), "vector<u8>"), // 3. description: vector<u8>
+    tx.pure(stringToVector(venue), "vector<u8>"), // 4. venue: vector<u8>
+    tx.pure(stringToVector(address), "vector<u8>"), // 5. address: vector<u8>
+    tx.pure(BigInt(ensureNumber(eventDate)), "u64"), // 6. event_date: u64
+    tx.pure(stringToVector(time), "vector<u8>"), // 7. time: vector<u8>
+    tx.pure(stringToVector(closingTime), "vector<u8>"), // 8. closing_time: vector<u8>
+    tx.pure(BigInt(ensureNumber(vipPriceInMist)), "u64"), // 9. vip_price: u64
+    tx.pure(BigInt(ensureNumber(normalPriceInMist)), "u64"), // 10. normal_price: u64
+    tx.pure(BigInt(ensureNumber(totalVipSeats)), "u64"), // 11. total_vip_seats: u64
+    tx.pure(BigInt(ensureNumber(totalNormalSeats)), "u64"), // 12. total_normal_seats: u64
+    tx.pure(stringToVector(category), "vector<u8>"), // 13. category: vector<u8>
+    tx.pure(stringToVector(language), "vector<u8>"), // 14. language: vector<u8>
+    tx.pure(stringToVector(ageRating), "vector<u8>"), // 15. age_rating: vector<u8>
+    tx.pure(stringToVector(genres), "vector<u8>"), // 16. genres: vector<u8>
+    tx.pure(stringToVector(imageUrl), "vector<u8>"), // 17. image_url: vector<u8>
+    tx.pure(stringToVector(seatingImageUrl), "vector<u8>"), // 18. seating_image_url: vector<u8>
+    tx.pure(stringToVector(importantNotices), "vector<u8>"), // 19. important_notices: vector<u8>
+    tx.pure(stringToVector(termsAndConditions), "vector<u8>"), // 20. terms_and_conditions: vector<u8>
+  ];
+
+  console.log(`✅ Prepared ${arguments_array.length} arguments for create_event (expected: 20)`);
+  
+  // Log each argument for detailed debugging
+  arguments_array.forEach((arg, index) => {
+    console.log(`Arg ${index + 1}:`, arg);
+  });
+
+  console.log('🎯 Final moveCall target:', `${CONTRACT_CONFIG.packageId}::ticketing::create_event`);
+  console.log('🔧 CONTRACT_CONFIG.packageId:', CONTRACT_CONFIG.packageId);
 
   tx.moveCall({
     target: `${CONTRACT_CONFIG.packageId}::ticketing::create_event`,
-    arguments: [
-      tx.pure(eventId), // event_id: u64
-      tx.pure(Array.from(new TextEncoder().encode(name || ''))), // name: vector<u8>
-      tx.pure(Array.from(new TextEncoder().encode(description || ''))), // description: vector<u8>
-      tx.pure(Array.from(new TextEncoder().encode(venue || ''))), // venue: vector<u8>
-      tx.pure(Array.from(new TextEncoder().encode(address || ''))), // address: vector<u8>
-      tx.pure(eventDate), // event_date: u64
-      tx.pure(Array.from(new TextEncoder().encode(time || ''))), // time: vector<u8>
-      tx.pure(Array.from(new TextEncoder().encode(closingTime || ''))), // closing_time: vector<u8>
-      tx.pure(vipPriceInMist.toString()), // vip_price: u64
-      tx.pure(normalPriceInMist.toString()), // normal_price: u64
-      tx.pure(totalVipSeats), // total_vip_seats: u64
-      tx.pure(totalNormalSeats), // total_normal_seats: u64
-      tx.pure(Array.from(new TextEncoder().encode(category || ''))), // category: vector<u8>
-      tx.pure(Array.from(new TextEncoder().encode(language || ''))), // language: vector<u8>
-      tx.pure(Array.from(new TextEncoder().encode(ageRating || ''))), // age_rating: vector<u8>
-      tx.pure(Array.from(new TextEncoder().encode(genres || ''))), // genres: vector<u8>
-      tx.pure(Array.from(new TextEncoder().encode(imageUrl || ''))), // image_url: vector<u8>
-      tx.pure(Array.from(new TextEncoder().encode(seatingImageUrl || ''))), // seating_image_url: vector<u8>
-      tx.pure(Array.from(new TextEncoder().encode(importantNotices || ''))), // important_notices: vector<u8>
-      tx.pure(Array.from(new TextEncoder().encode(termsAndConditions || ''))), // terms_and_conditions: vector<u8>
-    ],
+    arguments: arguments_array,
+  });
+
+  console.log('🚀 Creating event transaction with:', {
+    target: `${CONTRACT_CONFIG.packageId}::ticketing::create_event`,
+    packageId: CONTRACT_CONFIG.packageId,
+    argumentCount: 20,
+    eventId, 
+    name,
+    vipPriceInMist,
+    normalPriceInMist
   });
 
   return tx;
