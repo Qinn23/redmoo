@@ -346,11 +346,7 @@ function TicketDetailsModal({ ticket, isOpen, onClose }) {
   );
 }
 
-<<<<<<< HEAD
 const sectionContent = (active, handleLogout, walletInfo, tickets, loadingTickets, showPurchaseSuccess, clearDemoPurchases, onViewDetails, onSellTicket, showAccountSelector, wallet, setShowAccountSelector, balanceLoading, getFormattedBalance, eventForm, setEventForm, handleCreateEvent, isCreatingEvent, router) => {
-=======
-const sectionContent = (active, handleLogout, walletInfo, tickets, loadingTickets, showPurchaseSuccess, clearDemoPurchases, onViewDetails, showAccountSelector, wallet, setShowAccountSelector, balanceLoading, getFormattedBalance, eventForm, setEventForm, handleCreateEvent, isCreatingEvent, router) => {
->>>>>>> 571f44bb2d2ffd81bdbedf0e3f6046b2ac858785
   if (active === "mytickets") {
     return (
       <div className="space-y-6">
