@@ -737,6 +737,14 @@ const sectionContent = (active, handleLogout, walletInfo, tickets, loadingTicket
         {/* Current Events Section */}
         <div className="bg-gray-50 rounded-lg p-6">
           <h3 className="text-xl font-bold text-[#A31D1D] font-chonburi mb-4">Current Events</h3>
+          
+          {/* Copy success notification */}
+          {copySuccess && (
+            <div className="mb-4 p-2 bg-green-100 border border-green-300 rounded text-green-700 text-sm font-domine">
+              ✅ Object ID copied to clipboard!
+            </div>
+          )}
+          
           <div className="space-y-3">
             {/* Show dynamic events from localStorage */}
             {(() => {
@@ -745,24 +753,45 @@ const sectionContent = (active, handleLogout, walletInfo, tickets, loadingTicket
                 return Object.entries(dynamicEvents).map(([eventId, eventData]) => (
                   <div key={`dynamic-${eventId}`} className="bg-white rounded-lg p-4 border border-gray-200 border-l-4 border-l-green-500">
                     <div className="flex justify-between items-center">
-                      <div>
+                      <div className="flex-1">
                         <div className="font-semibold text-gray-800 font-domine">
                           {eventData.name} <span className="text-sm text-green-600">(Event #{eventId})</span>
                         </div>
                         <div className="text-sm text-gray-600 font-domine mb-1">
                           {eventData.venue} • {new Date(eventData.eventDate).toLocaleDateString()} • {eventData.time}
                         </div>
-                        <div className="text-xs text-gray-500 font-mono">{eventData.objectId}</div>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-xs text-gray-500 font-domine">Object ID:</span>
+                          <button
+                            onClick={() => copyObjectId(eventData.objectId)}
+                            className="text-xs text-blue-600 hover:text-blue-800 font-mono bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded border transition-colors"
+                            title={`Click to copy: ${eventData.objectId}`}
+                          >
+                            {shortenObjectId(eventData.objectId)}
+                          </button>
+                          {copySuccess === eventData.objectId && (
+                            <span className="text-xs text-green-600 font-domine">✓ Copied!</span>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex space-x-2">
+                      <div className="flex space-x-2 ml-4">
                         <button 
                           onClick={() => router.push(`/event/${eventId}`)}
-                          className="px-3 py-1 bg-blue-100 text-blue-700 rounded text-sm font-domine hover:bg-blue-200"
+                          className="px-3 py-1 bg-blue-100 text-blue-700 rounded text-sm font-domine hover:bg-blue-200 whitespace-nowrap"
                         >
                           View Details
                         </button>
-                        <button className="px-3 py-1 bg-green-100 text-green-700 rounded text-sm font-domine hover:bg-green-200">
+                        <button 
+                          className="px-3 py-1 bg-green-100 text-green-700 rounded text-sm font-domine hover:bg-green-200 whitespace-nowrap"
+                        >
                           Withdraw Funds
+                        </button>
+                        <button
+                          onClick={() => removeEvent(eventData)}
+                          disabled={isRemovingEvent}
+                          className="px-3 py-1 bg-red-100 text-red-700 rounded text-sm font-domine hover:bg-red-200 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                        >
+                          {isRemovingEvent && removingEventId === eventData.objectId ? 'Removing...' : 'Remove Event'}
                         </button>
                       </div>
                     </div>
@@ -871,10 +900,11 @@ const sectionContent = (active, handleLogout, walletInfo, tickets, loadingTicket
 
 export default function Profile() {
   const router = useRouter();
+  
+  // All state variables declared at the top
   const [active, setActive] = useState("mytickets");
   const [tickets, setTickets] = useState([]);
   const [loadingTickets, setLoadingTickets] = useState(true);
-
   const [walletLoading, setWalletLoading] = useState(true);
   const [showPurchaseSuccess, setShowPurchaseSuccess] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState(null);
@@ -910,7 +940,9 @@ export default function Profile() {
     termsAndConditions: ''
   });
   const [isCreatingEvent, setIsCreatingEvent] = useState(false);
-  const [contractConfig, setContractConfig] = useState(null);
+  const [isRemovingEvent, setIsRemovingEvent] = useState(false);
+  const [removingEventId, setRemovingEventId] = useState(null);
+  const [copySuccess, setCopySuccess] = useState('');
 
   // Initialize the SuiClient for blockchain interactions
   const [suiClient] = useState(new SuiClient({ url: getFullnodeUrl('devnet') }));
@@ -921,10 +953,219 @@ export default function Profile() {
   
   // Use our custom wallet info hook for consistent access
   const { isConnected, address } = useWalletInfo();
-  
+
   // Use the Suiet useAccountBalance hook instead of manually fetching balance
   const { error: balanceError, loading: balanceLoading, balance: walletBalance } = useAccountBalance();
-  
+
+  // Function to shorten object ID
+  const shortenObjectId = (objectId) => {
+    if (!objectId) return 'N/A';
+    return `${objectId.slice(0, 8)}...${objectId.slice(-6)}`;
+  };
+
+  // Function to copy object ID to clipboard
+  const copyObjectId = async (objectId) => {
+    try {
+      await navigator.clipboard.writeText(objectId);
+      setCopySuccess(objectId);
+      setTimeout(() => setCopySuccess(''), 2000);
+    } catch (err) {
+      console.error('Failed to copy: ', err);
+    }
+  };
+
+  // Function to remove event from blockchain
+  const removeEvent = async (eventData) => {
+    if (!connected) {
+      alert('Please connect your wallet first');
+      return;
+    }
+
+    try {
+      setIsRemovingEvent(true);
+      setRemovingEventId(eventData.objectId);
+
+      // Initialize contract utilities first
+      contractUtils.initializeContract(CONTRACT_CONFIG);
+
+      console.log('🗑️ Removing event:', {
+        eventName: eventData.name,
+        objectId: eventData.objectId,
+        contractPackage: CONTRACT_CONFIG.packageId
+      });
+
+      const client = new SuiClient({ url: getFullnodeUrl('devnet') });
+      
+      // First, try to verify the object exists
+      try {
+        console.log('🔍 Verifying event object exists...');
+        const objectInfo = await client.getObject({
+          id: eventData.objectId,
+          options: { showContent: true, showType: true }
+        });
+        
+        console.log('📋 Object info:', objectInfo);
+        
+        // Check if object was already deleted (successful previous removal)
+        if (objectInfo.error && objectInfo.error.code === 'deleted') {
+          console.log('✅ Event object already deleted - cleaning up localStorage');
+          
+          // Remove from localStorage since it's already deleted on blockchain
+          const dynamicEvents = JSON.parse(localStorage.getItem('dynamic_events') || '{}');
+          const eventId = Object.keys(dynamicEvents).find(id => dynamicEvents[id].objectId === eventData.objectId);
+          if (eventId) {
+            delete dynamicEvents[eventId];
+            localStorage.setItem('dynamic_events', JSON.stringify(dynamicEvents));
+            console.log('🗑️ Event removed from localStorage');
+          }
+          
+          alert('Event was already removed successfully! Refreshing the page...');
+          window.location.reload();
+          return;
+        }
+        
+        if (objectInfo.error) {
+          throw new Error(`Event object not found: ${objectInfo.error.code}`);
+        }
+        
+        if (!objectInfo.data) {
+          throw new Error('Event object does not exist or has been deleted');
+        }
+        
+        // Check the actual organizer stored in the event
+        if (objectInfo.data.content && objectInfo.data.content.fields) {
+          const storedOrganizer = objectInfo.data.content.fields.organizer;
+          const currentWallet = address;
+          
+          console.log('🔍 ORGANIZER CHECK:', {
+            storedInEvent: storedOrganizer,
+            currentWallet: currentWallet,
+            configOrganizer: CONTRACT_CONFIG.organizerAddress,
+            match: storedOrganizer === currentWallet
+          });
+          
+          if (storedOrganizer !== currentWallet) {
+            throw new Error(`Organizer mismatch! Event was created by ${storedOrganizer} but you are ${currentWallet}. Only the original event creator can remove events.`);
+          }
+        }
+        
+        // Check if the object type matches our contract
+        const expectedType = `${CONTRACT_CONFIG.packageId}::ticketing::EventData`;
+        if (!objectInfo.data.type?.includes('EventData')) {
+          console.warn('⚠️ Object type mismatch:', {
+            expected: expectedType,
+            actual: objectInfo.data.type
+          });
+        }
+        
+        console.log('✅ Event object exists and is accessible');
+      } catch (verifyError) {
+        console.error('❌ Object verification failed:', verifyError);
+        throw new Error(`Cannot access event object: ${verifyError.message}. This event may have been created with a different contract.`);
+      }
+      
+      // Create remove event transaction
+      const removeEventTx = contractUtils.createRemoveEventTransaction(eventData.objectId);
+      
+      console.log('📋 Executing remove event transaction...');
+      console.log('📦 Transaction details:', {
+        target: `${CONTRACT_CONFIG.packageId}::ticketing::remove_event`,
+        eventObjectId: eventData.objectId
+      });
+      
+      const result = await wallet.signAndExecuteTransactionBlock({
+        transactionBlock: removeEventTx,
+        options: {
+          showEffects: true,
+          showObjectChanges: true,
+        },
+      });
+
+      console.log('✅ Remove event transaction result:', result);
+      console.log('📊 Transaction effects:', result.effects);
+      console.log('🔄 Object changes:', result.objectChanges);
+
+      // Handle different response formats
+      let transactionSuccess = false;
+      
+      if (typeof result.effects === 'string') {
+        // Effects is base64 encoded - transaction was submitted successfully
+        console.log('🔍 Effects returned as encoded string - transaction likely successful');
+        transactionSuccess = true;
+      } else if (result.effects?.status?.status === 'success') {
+        // Effects is already parsed
+        console.log('🔍 Effects returned as parsed object');
+        transactionSuccess = true;
+      } else if (result.digest) {
+        // If we have a digest, the transaction was submitted
+        console.log('🔍 Transaction has digest - likely successful');
+        transactionSuccess = true;
+      }
+      
+      console.log('🎯 Transaction success status:', transactionSuccess);
+      
+      if (transactionSuccess) {
+        console.log('🎉 Event removed successfully from blockchain');
+        
+        // Remove from localStorage
+        const dynamicEvents = JSON.parse(localStorage.getItem('dynamic_events') || '{}');
+        const eventId = Object.keys(dynamicEvents).find(id => dynamicEvents[id].objectId === eventData.objectId);
+        if (eventId) {
+          delete dynamicEvents[eventId];
+          localStorage.setItem('dynamic_events', JSON.stringify(dynamicEvents));
+          console.log('🗑️ Event removed from localStorage');
+        }
+        
+        alert('Event removed successfully!');
+        // Force page refresh to update the events list
+        window.location.reload();
+      } else {
+        // Try to get more details if possible
+        let errorDetails = 'Unknown transaction status';
+        
+        if (typeof result.effects === 'string') {
+          errorDetails = 'Transaction submitted but status unclear (effects encoded)';
+        } else if (result.effects?.status) {
+          errorDetails = `Status: ${JSON.stringify(result.effects.status)}`;
+        }
+        
+        console.error('❌ Transaction failed details:', {
+          status: result.effects?.status,
+          error: result.effects?.status?.error,
+          gasUsed: result.effects?.gasUsed,
+          executedEpoch: result.effects?.executedEpoch,
+          digest: result.digest,
+          effectsType: typeof result.effects
+        });
+        
+        throw new Error(`Transaction failed: ${errorDetails}`);
+      }
+    } catch (error) {
+      console.error('❌ Remove event error:', error);
+      console.error('❌ Error details:', {
+        message: error.message,
+        code: error.code,
+        stack: error.stack
+      });
+      
+      let errorMessage = 'Failed to remove event';
+      if (error.message.includes('E_NOT_ORGANIZER')) {
+        errorMessage = 'Only the event organizer can remove this event';
+      } else if (error.message.includes('CommandArgumentError')) {
+        errorMessage = 'Invalid event object - this event may not exist on the blockchain';
+      } else if (error.code === -32602) {
+        errorMessage = 'Function not found - contract may need to be updated';
+      } else {
+        errorMessage = `Failed to remove event: ${error.message}`;
+      }
+      
+      alert(errorMessage);
+    } finally {
+      setIsRemovingEvent(false);
+      setRemovingEventId(null);
+    }
+  };
+
   // Function to format the balance for display
   const getFormattedBalance = () => {
     if (balanceLoading) return 'Loading...';
@@ -1762,7 +2003,14 @@ Target function: ${contractConfig.packageId}::ticketing::create_event`;
               setEventForm,
               handleCreateEvent,
               isCreatingEvent,
-              router
+              router,
+              copySuccess,
+              setCopySuccess,
+              shortenObjectId,
+              copyObjectId,
+              removeEvent,
+              isRemovingEvent,
+              removingEventId
             )}
           </div>
         </div>

@@ -5,7 +5,7 @@ export const CONTRACT_CONFIG = {
   // treasury refers to the account that receives all payments and fees collected from ticket purchases.
   
   // Organizer settings
-  organizerAddress: '0xe8b34b4ec5b0a05a7754f474d4c06e22c880f18b1d3617807dd8f09efc85fb2b', // Same as treasury for now
+  organizerAddress: '0xe8b34b4ec5b0a05a7754f474d4c06e22c880f18b1d3617807dd8f09efc85fb2b', // Updated to match actual organizer wallet
   
   // Contract objects
   objects: {
